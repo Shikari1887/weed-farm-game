@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Weed Farm Idle Game</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="app">
+    <div class="top-bar">
+      <div class="money">💰 $<span id="money">150</span></div>
+    </div>
+    
+    <div class="main-content">
+      <!-- Start Menu -->
+      <div id="startMenu" class="screen active">
+        <div class="start-menu">
+          <div class="game-title">🌿 Weed Farm</div>
+          <div class="menu-buttons">
+            <button class="menu-btn" id="newGameBtn">New Game</button>
+            <button class="menu-btn" id="loadGameBtn">Load Game</button>
+            <button class="menu-btn" id="continueBtn" style="display: none;">Continue</button>
+          </div>
+          <div class="save-info" id="saveInfo">No save data found</div>
+        </div>
+      </div>
+      
+      <!-- Farm Screen -->
+      <div id="farmScreen" class="screen">
+        <div class="instructions">
+          Scroll to pan around your farm
+        </div>
+        <div class="farm-container" id="farmContainer">
+          <div class="farm-grid" id="farmGrid"></div>
+        </div>
+        <!-- Tools Menu (only visible on farm) -->
+        <div class="tools-menu show" id="toolsMenu"></div>
+      </div>
+      
+      <!-- Map Screen -->
+      <div id="mapScreen" class="screen">
+        <div class="placeholder">
+          <div>🗺️</div>
+          <div>Map Screen</div>
+          <div style="font-size: 16px; color: rgba(255,255,255,0.4);">Coming Soon</div>
+        </div>
+      </div>
+      
+      <!-- Shop Screen -->
+      <div id="shopScreen" class="screen">
+        <div class="shop-container">
+          <div class="shop-header">
+            <h2>🪴 Shop</h2>
+            <div class="level-display">Cultivation Level: <span id="shopLevel">1</span></div>
+            <div class="shop-tabs">
+              <button class="shop-tab active" data-tab="seeds">🌱 Seeds</button>
+              <button class="shop-tab" data-tab="tools">🔧 Tools</button>
+            </div>
+          </div>
+          <div id="seedsTab" class="shop-tab-content active">
+            <div class="strain-list" id="strainList"></div>
+          </div>
+          <div id="toolsTab" class="shop-tab-content">
+            <div class="strain-list" id="toolsList"></div>
+          </div>
+        </div>
+        
+        <!-- Floating Basket Button -->
+        <button class="floating-basket-btn" id="basketBtn">
+          🛒
+          <span class="basket-count" style="display: none;">0</span>
+        </button>
+        
+        <!-- Basket Panel -->
+        <div class="basket-panel" id="basketPanel">
+          <div class="basket-header">
+            <h3>🛒 Shopping Basket</h3>
+            <button class="close-basket">✕</button>
+          </div>
+          <div class="basket-items" id="basketItems">
+            <div class="empty-basket">Your basket is empty<br>Add items from the shop!</div>
+          </div>
+          <div class="basket-footer">
+            <div class="basket-summary">
+              <div class="basket-subtotal">
+                <span>Subtotal:</span>
+                <span class="subtotal-amount">$<span id="basketSubtotal">0</span></span>
+              </div>
+              <div class="basket-total">
+                <span>Total:</span>
+                <span class="total-amount">$<span id="basketTotal">0</span></span>
+              </div>
+            </div>
+            <div class="basket-actions">
+              <button class="basket-action-btn clear-btn" id="clearBasketBtn">Clear Basket</button>
+              <button class="basket-action-btn checkout-btn" id="checkoutBtn">Checkout</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Inventory Screen -->
+      <div id="inventoryOverlay" class="inventory-overlay">
+        <div class="inventory-popup">
+          <div class="inventory-header">
+            <h2>🎒 Seed Bag</h2>
+            <button class="close-inventory">✕</button>
+          </div>
+          <div class="seed-bag" id="seedBag">
+            <div class="empty-bag">Your bag is empty!<br>Visit the shop to buy seeds.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bottom-nav">
+      <button class="nav-btn" data-screen="mapScreen">
+        🗺️<br>Map
+      </button>
+      <button class="nav-btn active" data-screen="farmScreen">
+        🌿<br>Farm
+      </button>
+      <button class="nav-btn" id="bagButton">
+        🎒<br>Bag
+      </button>
+      <button class="nav-btn" data-screen="shopScreen">
+        🪴<br>Shop
+      </button>
+    </div>
+  </div>
+
+  <!-- Load modules in order -->
+  <script src="js/data/strains.js"></script>
+  <script src="js/data/tools.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/market.js"></script>
+  <script src="js/grid.js"></script>
+  <script src="js/inventory.js"></script>
+  <script src="js/shop.js"></script>
+  <script src="js/ui-modals.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
