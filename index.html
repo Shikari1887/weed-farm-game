@@ -1,0 +1,5437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Weed Farm Idle Game</title>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: linear-gradient(180deg, #2d5016 0%, #1a3010 100%);
+  color: #fff;
+  overflow: hidden;
+  touch-action: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  /* Prevent text selection on mobile */
+  -webkit-user-select: none;
+  user-select: none;
+  /* Prevent pull-to-refresh */
+  overscroll-behavior: none;
+  /* Optimize for mobile rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+.top-bar {
+  height: 60px;
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  flex-shrink: 0;
+}
+
+.stats-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stats-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stat-item {
+  background: rgba(0, 0, 0, 0.5);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 100px;
+}
+
+.stat-icon {
+  font-size: 20px;
+}
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.stat-label {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1;
+}
+
+.stat-value {
+  font-size: 18px;
+  font-weight: bold;
+  color: #ffd700;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  line-height: 1.2;
+}
+
+/* Keep old money class for backwards compatibility */
+.money {
+  font-size: 24px;
+  font-weight: bold;
+  color: #ffd700;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.main-content {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.screen {
+  display: none;
+  width: 100%;
+  height: 100%;
+}
+
+.screen.active {
+  display: block;
+}
+
+/* Start Menu */
+.start-menu {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 30px;
+  background: linear-gradient(180deg, #2d5016 0%, #1a3010 100%);
+}
+
+.game-title {
+  font-size: 48px;
+  font-weight: bold;
+  color: #4ade80;
+  text-shadow: 0 0 20px rgba(74, 222, 128, 0.5);
+  margin-bottom: 20px;
+}
+
+.menu-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  width: 300px;
+}
+
+.menu-btn {
+  background: rgba(74, 222, 128, 0.2);
+  border: 2px solid rgba(74, 222, 128, 0.4);
+  color: #fff;
+  padding: 20px 32px;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 56px; /* Better touch target */
+}
+
+.menu-btn:hover {
+  background: rgba(74, 222, 128, 0.3);
+  border-color: #4ade80;
+  box-shadow: 0 0 15px rgba(74, 222, 128, 0.4);
+}
+
+.menu-btn:active {
+  transform: scale(0.98);
+}
+
+.menu-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.save-info {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 30px;
+  text-align: center;
+}
+
+.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 24px;
+  color: rgba(255, 255, 255, 0.5);
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Farm */
+.farm-container {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  position: relative;
+  background: 
+    linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px),
+    linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px);
+  background-size: 20px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.farm-grid {
+  position: relative;
+  width: 480px;
+  height: 480px;
+}
+
+.tile {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  user-select: none;
+  font-size: 48px;
+  cursor: pointer;
+  /* Improve touch response */
+  touch-action: manipulation;
+}
+
+.tile.locked {
+  background: linear-gradient(135deg, #2a2520 0%, #1a1510 100%);
+  /* Add image support for locked obstacles */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.6;
+  filter: grayscale(50%);
+}
+
+/* Locked tile variations with image support */
+.tile.locked.obstacle-weed {
+  background-image: url('../images/tiles/soil-locked-weed.png'), linear-gradient(135deg, #4a3520 0%, #3a2810 100%);
+}
+
+.tile.locked.obstacle-stone {
+  background-image: url('../images/tiles/soil-locked-stone.png'), linear-gradient(135deg, #4a3520 0%, #3a2810 100%);
+}
+
+.tile.locked.obstacle-tree {
+  background-image: url('../images/tiles/soil-locked-tree.png'), linear-gradient(135deg, #4a3520 0%, #3a2810 100%);
+}
+
+.tile.unlocked {
+  background: linear-gradient(135deg, #5d4a2a 0%, #4a3a1a 100%);
+  /* Add image support for empty soil */
+  background-image: url('../images/tiles/soil-empty.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.tile.ready {
+  border-color: #4ade80;
+  box-shadow: 0 0 10px rgba(74, 222, 128, 0.5);
+  animation: pulse 2s infinite;
+  /* Ready plant glow overlay */
+  position: relative;
+}
+
+.tile.ready::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url('../images/tiles/plant-ready-glow.png');
+  background-size: cover;
+  opacity: 0.6;
+  pointer-events: none;
+  animation: glow-pulse 2s infinite;
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(74, 222, 128, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(74, 222, 128, 0.8);
+  }
+}
+
+.tile:active {
+  transform: scale(0.98);
+}
+
+.empty-tile {
+  font-size: 32px;
+  color: rgba(255, 255, 255, 0.3);
+  font-weight: bold;
+}
+
+.tile.unlocked.plantable {
+  border-color: #4ade80;
+  box-shadow: 0 0 15px rgba(74, 222, 128, 0.4);
+  cursor: pointer;
+}
+
+.tile.unlocked.plantable .empty-tile {
+  color: #4ade80;
+}
+
+.tile.watered {
+  background: linear-gradient(135deg, #3d5e4a 0%, #2d4a3a 100%);
+  background-image: url('../images/tiles/soil-watered.png');
+  background-size: cover;
+  background-position: center;
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+.tile.planting {
+  background: linear-gradient(135deg, #5d4a2a 0%, #4a3a1a 100%);
+  animation: planting-pulse 0.5s ease-in-out infinite;
+}
+
+.tile.harvesting {
+  background: linear-gradient(135deg, #5d4a2a 0%, #4a3a1a 100%);
+  animation: harvesting-shake 0.3s ease-in-out infinite;
+}
+
+/* Plant growth stage sprites */
+.plant-icon {
+  width: 100%;
+  height: 100%;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  font-size: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.plant-stage-seedling {
+  background-image: url('../images/tiles/plant-seedling.png');
+}
+
+.plant-stage-sprout {
+  background-image: url('../images/tiles/plant-sprout.png');
+}
+
+.plant-stage-vegetative {
+  background-image: url('../images/tiles/plant-vegetative.png');
+}
+
+.plant-stage-flowering {
+  background-image: url('../images/tiles/plant-flowering.png');
+}
+
+.plant-stage-ready {
+  background-image: url('../images/tiles/plant-ready.png');
+}
+
+@keyframes planting-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.02);
+    opacity: 0.9;
+  }
+}
+
+@keyframes harvesting-shake {
+  0%, 100% {
+    transform: translateX(0) rotate(0deg);
+  }
+  25% {
+    transform: translateX(-2px) rotate(-1deg);
+  }
+  75% {
+    transform: translateX(2px) rotate(1deg);
+  }
+}
+
+.animation-icon {
+  font-size: 48px;
+  margin-bottom: 8px;
+}
+
+.planting-animation {
+  animation: bounce-in 0.5s ease-in-out infinite;
+}
+
+.harvesting-animation {
+  animation: rake-motion 0.3s ease-in-out infinite;
+}
+
+@keyframes bounce-in {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes rake-motion {
+  0%, 100% {
+    transform: translateX(0) rotate(0deg);
+  }
+  25% {
+    transform: translateX(-5px) rotate(-5deg);
+  }
+  75% {
+    transform: translateX(5px) rotate(5deg);
+  }
+}
+
+.animation-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: bold;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.water-indicator {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  font-size: 16px;
+}
+
+.tool-indicator {
+  position: fixed;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(59, 130, 246, 0.95);
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: bold;
+  z-index: 100;
+  display: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.tool-indicator.show {
+  display: block;
+}
+
+/* Hide on non-farm screens */
+body:not(:has(#farmScreen.active)) .tool-indicator {
+  display: none !important;
+}
+
+/* Tools Menu */
+.tools-menu {
+  position: fixed;
+  right: -80px; /* Hidden by default, only handle visible */
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.9);
+  border: 2px solid rgba(74, 222, 128, 0.4);
+  border-right: none;
+  border-radius: 12px 0 0 12px;
+  padding: 10px;
+  padding-right: 0;
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 100;
+  transition: right 0.3s ease;
+}
+
+.tools-menu.show {
+  display: flex;
+}
+
+.tools-menu.expanded {
+  right: 0;
+}
+
+/* Tools Menu Handle */
+.tools-handle {
+  position: absolute;
+  left: -40px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 80px;
+  background: rgba(0, 0, 0, 0.9);
+  border: 2px solid rgba(74, 222, 128, 0.4);
+  border-right: none;
+  border-radius: 12px 0 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tools-handle:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
+.handle-icon {
+  font-size: 24px;
+  transition: transform 0.3s ease;
+}
+
+.tools-menu.expanded .handle-icon {
+  transform: rotate(180deg);
+}
+
+.tool-button {
+  background: rgba(74, 222, 128, 0.2);
+  border: 2px solid rgba(74, 222, 128, 0.4);
+  color: #fff;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 24px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tool-button:active {
+  transform: scale(0.95);
+}
+
+.tool-button.active {
+  background: rgba(74, 222, 128, 0.4);
+  border-color: #4ade80;
+  box-shadow: 0 0 10px rgba(74, 222, 128, 0.6);
+}
+
+.tool-button.disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.tool-button.locked {
+  opacity: 0.5;
+  background: rgba(100, 100, 100, 0.2);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.tool-label {
+  position: absolute;
+  left: 70px;
+  background: rgba(0, 0, 0, 0.9);
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  white-space: nowrap;
+  pointer-events: none;
+  display: none;
+}
+
+.tool-button:hover .tool-label {
+  display: block;
+}
+
+.tool-lock-badge {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  background: rgba(239, 68, 68, 0.9);
+  color: #fff;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: bold;
+}
+
+.tool-uses {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #ffd700;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+.refill-button {
+  background: rgba(59, 130, 246, 0.3);
+  border: 2px solid rgba(59, 130, 246, 0.5);
+  color: #3b82f6;
+  padding: 8px;
+  border-radius: 8px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: bold;
+}
+
+.refill-button:active {
+  transform: scale(0.95);
+  background: rgba(59, 130, 246, 0.4);
+}
+
+.plant-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.progress-bar-container {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  right: 8px;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #4ade80 0%, #22c55e 100%);
+  transition: width 0.3s ease;
+  border-radius: 3px;
+}
+
+.growth-timer {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: bold;
+  font-family: monospace;
+  min-width: 45px;
+  text-align: center;
+}
+
+.cost-badge {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #ffd700;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.instructions {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  text-align: center;
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0;
+  animation: fadeIn 0.5s 0.5s forwards;
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
+}
+
+/* Shop Screen */
+.shop-container {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  padding: 20px;
+  background: linear-gradient(180deg, #1a3010 0%, #0f1f08 100%);
+}
+
+.shop-header {
+  text-align: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.shop-header h2 {
+  font-size: 28px;
+  margin-bottom: 10px;
+  color: #4ade80;
+}
+
+.level-display {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.shop-tabs {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+  justify-content: center;
+}
+
+.shop-tab {
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.6);
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.shop-tab:active {
+  transform: scale(0.95);
+}
+
+.shop-tab.active {
+  background: rgba(74, 222, 128, 0.2);
+  border-color: #4ade80;
+  color: #4ade80;
+}
+
+.shop-tab-content {
+  display: none;
+}
+
+.shop-tab-content.active {
+  display: block;
+}
+
+.strain-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding-bottom: 20px;
+}
+
+.strain-card {
+  background: linear-gradient(135deg, rgba(74, 222, 128, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%);
+  border: 2px solid rgba(74, 222, 128, 0.3);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: all 0.2s;
+  cursor: pointer;
+  min-height: 140px;
+  /* Force aspect ratio to prevent stretching */
+  aspect-ratio: 1 / 1;
+  justify-content: space-between;
+}
+
+.strain-card:active {
+  transform: scale(0.98);
+}
+
+.strain-card.locked {
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.6) 100%);
+  border-color: rgba(255, 255, 255, 0.1);
+  opacity: 0.6;
+}
+
+.strain-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.strain-name {
+  font-size: 14px;
+  font-weight: bold;
+  color: #fff;
+  line-height: 1.2;
+}
+
+.strain-card.locked .strain-name {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.strain-stats {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  width: 100%;
+}
+
+.strain-tier {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: bold;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+
+.tier-budget {
+  background: rgba(156, 163, 175, 0.3);
+  color: #d1d5db;
+}
+
+.tier-premium {
+  background: rgba(168, 85, 247, 0.3);
+  color: #c084fc;
+}
+
+.tier-elite {
+  background: rgba(251, 191, 36, 0.3);
+  color: #fbbf24;
+}
+
+.tier-consumable {
+  background: rgba(59, 130, 246, 0.3);
+  color: #3b82f6;
+}
+
+.buy-button {
+  background: #4ade80;
+  color: #000;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 8px;
+  width: 100%;
+  min-height: 44px; /* Minimum touch target for mobile */
+}
+
+.buy-button:active {
+  transform: scale(0.95);
+  background: #22c55e;
+}
+
+.buy-button:disabled {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.3);
+  cursor: not-allowed;
+}
+
+.locked-requirement {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: bold;
+  margin-top: 8px;
+}
+
+/* Buy Options Popup */
+.buy-options {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.buy-popup {
+  background: linear-gradient(135deg, #1a3010 0%, #0f1f08 100%);
+  border: 2px solid #4ade80;
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 400px;
+  width: 100%;
+}
+
+.buy-popup h3 {
+  color: #4ade80;
+  margin-bottom: 8px;
+  font-size: 20px;
+}
+
+.buy-popup-subtitle {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.quantity-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.qty-btn {
+  background: rgba(74, 222, 128, 0.2);
+  border: 2px solid rgba(74, 222, 128, 0.4);
+  color: #4ade80;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.qty-btn:active {
+  transform: scale(0.95);
+  background: rgba(74, 222, 128, 0.3);
+}
+
+.qty-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.custom-input-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.custom-input {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.4);
+  border: 2px solid rgba(74, 222, 128, 0.4);
+  color: #fff;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 16px;
+  text-align: center;
+}
+
+.custom-input:focus {
+  outline: none;
+  border-color: #4ade80;
+}
+
+.popup-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.popup-btn {
+  flex: 1;
+  padding: 14px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.popup-btn.cancel {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.popup-btn.confirm {
+  background: #4ade80;
+  color: #000;
+}
+
+.popup-btn:active {
+  transform: scale(0.95);
+}
+
+/* Inventory Overlay */
+.inventory-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.inventory-overlay.show {
+  display: flex;
+}
+
+.inventory-popup {
+  background: linear-gradient(180deg, #1a3010 0%, #0f1f08 100%);
+  border: 3px solid #4ade80;
+  border-radius: 20px;
+  padding: 20px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.inventory-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.inventory-header h2 {
+  font-size: 24px;
+  color: #4ade80;
+  margin: 0;
+}
+
+.inventory-tabs {
+  display: flex;
+  gap: 10px;
+  padding: 0 20px 15px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.inventory-tab {
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.6);
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex: 1;
+}
+
+.inventory-tab:active {
+  transform: scale(0.95);
+}
+
+.inventory-tab.active {
+  background: rgba(74, 222, 128, 0.2);
+  border-color: #4ade80;
+  color: #4ade80;
+}
+
+.inventory-tab-content {
+  display: none;
+  padding: 20px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.inventory-tab-content.active {
+  display: block;
+}
+
+.inventory-capacity {
+  text-align: center;
+  font-size: 14px;
+  font-weight: bold;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 15px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+}
+
+.inventory-capacity span {
+  color: #4ade80;
+}
+
+.inventory-header h2 {
+  font-size: 24px;
+  color: #4ade80;
+  margin: 0;
+}
+
+.close-inventory {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #fff;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-inventory:active {
+  transform: scale(0.9);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.seed-bag {
+  background: linear-gradient(135deg, rgba(139, 69, 19, 0.3) 0%, rgba(101, 67, 33, 0.4) 100%);
+  border: 3px solid rgba(139, 69, 19, 0.6);
+  border-radius: 20px;
+  padding: 20px;
+  min-height: 350px;
+  box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.3);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 12px;
+  align-content: start;
+}
+
+.product-storage,
+.storage-container {
+  background: linear-gradient(135deg, rgba(34, 139, 34, 0.3) 0%, rgba(22, 101, 52, 0.4) 100%);
+  border: 3px solid rgba(74, 222, 128, 0.6);
+  border-radius: 20px;
+  padding: 20px;
+  min-height: 350px;
+  box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.3);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 12px;
+  align-content: start;
+}
+
+.storage-container {
+  background: linear-gradient(135deg, rgba(41, 98, 255, 0.2) 0%, rgba(25, 60, 180, 0.3) 100%);
+  border: 3px solid rgba(59, 130, 246, 0.6);
+}
+
+/* Storage Section Below Inventory */
+.storage-section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 3px solid rgba(59, 130, 246, 0.4);
+}
+
+.storage-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 0 4px;
+}
+
+.storage-header h3 {
+  font-size: 18px;
+  color: #3b82f6;
+  margin: 0;
+}
+
+.storage-capacity {
+  font-size: 13px;
+  font-weight: bold;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.storage-capacity span {
+  color: #3b82f6;
+}
+
+.storage-grid {
+  background: linear-gradient(135deg, rgba(41, 98, 255, 0.15) 0%, rgba(25, 60, 180, 0.2) 100%);
+  border: 2px solid rgba(59, 130, 246, 0.4);
+  border-radius: 12px;
+  padding: 12px;
+  min-height: 200px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(45px, 1fr));
+  gap: 6px;
+  align-content: start;
+}
+
+.storage-item-small {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(37, 99, 235, 0.2) 100%);
+  border: 2px solid rgba(59, 130, 246, 0.5);
+  border-radius: 8px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  min-height: 50px;
+  font-size: 10px;
+}
+
+.storage-item-small:active {
+  transform: scale(0.95);
+}
+
+.storage-item-small.selected {
+  background: linear-gradient(135deg, rgba(74, 222, 128, 0.4) 0%, rgba(34, 197, 94, 0.3) 100%);
+  border-color: #4ade80;
+  box-shadow: 0 0 10px rgba(74, 222, 128, 0.6);
+}
+
+.storage-item-small .seed-icon,
+.storage-item-small .product-icon {
+  font-size: 20px;
+  margin-bottom: 2px;
+}
+
+.storage-item-small .seed-name,
+.storage-item-small .product-name {
+  font-size: 8px;
+  line-height: 1.1;
+}
+
+.storage-item-small .seed-count,
+.storage-item-small .product-weight {
+  font-size: 9px;
+  padding: 1px 4px;
+}
+
+.transfer-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.transfer-btn {
+  flex: 1;
+  background: rgba(59, 130, 246, 0.3);
+  border: 2px solid rgba(59, 130, 246, 0.5);
+  color: #3b82f6;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.transfer-btn:active {
+  transform: scale(0.98);
+  background: rgba(59, 130, 246, 0.4);
+}
+
+.transfer-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.empty-bag {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 16px;
+  padding: 60px 20px;
+  line-height: 1.6;
+}
+
+.seed-stack {
+  background: linear-gradient(135deg, rgba(74, 222, 128, 0.2) 0%, rgba(34, 197, 94, 0.15) 100%);
+  border: 2px solid rgba(74, 222, 128, 0.4);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  min-height: 100px;
+}
+
+.seed-stack:active {
+  transform: scale(0.95);
+}
+
+.seed-stack.selected {
+  background: linear-gradient(135deg, rgba(74, 222, 128, 0.4) 0%, rgba(34, 197, 94, 0.3) 100%);
+  border-color: #4ade80;
+  box-shadow: 0 0 15px rgba(74, 222, 128, 0.6);
+  transform: scale(1.05);
+}
+
+/* Draggable item styles */
+.sortable-ghost {
+  opacity: 0.4;
+}
+
+.sortable-drag {
+  opacity: 0.8;
+  transform: scale(1.1);
+  cursor: grabbing !important;
+}
+
+.sortable-chosen {
+  cursor: grabbing;
+}
+
+.seed-stack,
+.product-item,
+.storage-item {
+  cursor: grab;
+}
+
+.seed-stack:active,
+.product-item:active,
+.storage-item:active {
+  cursor: grabbing;
+}
+
+.seed-icon {
+  font-size: 36px;
+  margin-bottom: 8px;
+}
+
+.seed-name {
+  font-size: 11px;
+  color: #fff;
+  text-align: center;
+  font-weight: bold;
+  margin-bottom: 4px;
+  line-height: 1.2;
+}
+
+.seed-count {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #ffd700;
+  padding: 3px 7px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.product-item {
+  background: linear-gradient(135deg, rgba(74, 222, 128, 0.2) 0%, rgba(34, 197, 94, 0.15) 100%);
+  border: 2px solid rgba(74, 222, 128, 0.4);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  min-height: 110px;
+}
+
+.product-item:active {
+  transform: scale(0.95);
+}
+
+.product-item.selected {
+  background: linear-gradient(135deg, rgba(74, 222, 128, 0.4) 0%, rgba(34, 197, 94, 0.3) 100%);
+  border-color: #4ade80;
+  box-shadow: 0 0 15px rgba(74, 222, 128, 0.6);
+  transform: scale(1.05);
+}
+
+.product-icon {
+  font-size: 36px;
+  margin-bottom: 8px;
+}
+
+.product-name {
+  font-size: 11px;
+  color: #fff;
+  text-align: center;
+  font-weight: bold;
+  margin-bottom: 4px;
+  line-height: 1.2;
+}
+
+.product-weight {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #4ade80;
+  padding: 3px 7px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.product-quality {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(0, 0, 0, 0.4);
+  padding: 3px 8px;
+  border-radius: 6px;
+  margin-top: 4px;
+}
+
+.quality-fresh {
+  color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.5);
+}
+
+.quality-drying {
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.5);
+}
+
+.quality-cured {
+  color: #a855f7;
+  border: 1px solid rgba(168, 85, 247, 0.5);
+}
+
+/* Bottom Navigation */
+.bottom-nav {
+  height: 80px;
+  background: rgba(0, 0, 0, 0.5);
+  border-top: 2px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 0;
+  gap: 8px;
+}
+
+.nav-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+  padding: 12px 8px;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: all 0.2s;
+  flex: 1;
+  max-width: 100px;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+.nav-btn:active {
+  transform: scale(0.95);
+}
+
+.nav-btn.active {
+  color: #fff;
+  background: rgba(74, 222, 128, 0.2);
+  border-color: rgba(74, 222, 128, 0.5);
+  box-shadow: 0 0 10px rgba(74, 222, 128, 0.3);
+}
+
+/* Custom Notification System */
+.custom-notification {
+  position: fixed;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-120%);
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.95) 0%, rgba(20, 20, 20, 0.95) 100%);
+  border: 2px solid rgba(74, 222, 128, 0.6);
+  border-radius: 16px;
+  padding: 16px 24px;
+  min-width: 280px;
+  max-width: 90vw;
+  z-index: 10000;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.custom-notification.show {
+  transform: translateX(-50%) translateY(0);
+}
+
+.custom-notification.success {
+  border-color: #4ade80;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(22, 163, 74, 0.15) 100%),
+              linear-gradient(135deg, rgba(0, 0, 0, 0.95) 0%, rgba(20, 20, 20, 0.95) 100%);
+}
+
+.custom-notification.error {
+  border-color: #ef4444;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(220, 38, 38, 0.15) 100%),
+              linear-gradient(135deg, rgba(0, 0, 0, 0.95) 0%, rgba(20, 20, 20, 0.95) 100%);
+}
+
+.custom-notification.warning {
+  border-color: #fbbf24;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(245, 158, 11, 0.15) 100%),
+              linear-gradient(135deg, rgba(0, 0, 0, 0.95) 0%, rgba(20, 20, 20, 0.95) 100%);
+}
+
+.custom-notification.info {
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.15) 100%),
+              linear-gradient(135deg, rgba(0, 0, 0, 0.95) 0%, rgba(20, 20, 20, 0.95) 100%);
+}
+
+.notification-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.notification-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.notification-message {
+  color: #fff;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: pre-line;
+}
+
+/* Custom Modal System */
+.custom-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.custom-modal.show {
+  opacity: 1;
+}
+
+.custom-modal.show .modal-content {
+  transform: scale(1);
+}
+
+.modal-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  position: relative;
+  background: linear-gradient(135deg, #1a3010 0%, #0f1f08 100%);
+  border: 3px solid #4ade80;
+  border-radius: 20px;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+  transform: scale(0.9);
+  transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.modal-header {
+  padding: 20px 24px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #4ade80;
+  font-size: 22px;
+  font-weight: bold;
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.modal-body p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 16px;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+.modal-input {
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 2px solid rgba(74, 222, 128, 0.4);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 16px;
+}
+
+.modal-input:focus {
+  outline: none;
+  border-color: #4ade80;
+}
+
+.modal-footer {
+  padding: 16px 24px 20px;
+  display: flex;
+  gap: 12px;
+}
+
+.modal-btn {
+  flex: 1;
+  padding: 14px 24px;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 48px;
+}
+
+.modal-btn:active {
+  transform: scale(0.95);
+}
+
+.cancel-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.cancel-btn:active {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.confirm-btn {
+  background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+  color: #000;
+  box-shadow: 0 4px 12px rgba(74, 222, 128, 0.4);
+}
+
+.confirm-btn:active {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+}
+
+/* Mobile Optimizations */
+@media (max-width: 640px) {
+  .custom-notification {
+    min-width: 260px;
+    padding: 14px 20px;
+  }
+  
+  .notification-icon {
+    font-size: 20px;
+  }
+  
+  .notification-message {
+    font-size: 14px;
+  }
+  
+  .modal-content {
+    max-width: calc(100vw - 40px);
+  }
+  
+  .modal-header h3 {
+    font-size: 20px;
+  }
+  
+  .modal-body p {
+    font-size: 15px;
+  }
+  
+  .modal-btn {
+    padding: 12px 20px;
+    font-size: 15px;
+    min-height: 44px;
+  }
+  
+  /* Top bar mobile adjustments */
+  .top-bar {
+    padding: 0 12px;
+  }
+  
+  .stat-item {
+    padding: 6px 12px;
+    min-width: 85px;
+  }
+  
+  .stat-icon {
+    font-size: 18px;
+  }
+  
+  .stat-label {
+    font-size: 9px;
+  }
+  
+  .stat-value {
+    font-size: 16px;
+  }
+  
+  .stats-left,
+  .stats-right {
+    gap: 8px;
+  }
+}
+
+/* Touch feedback for mobile */
+@media (hover: none) and (pointer: coarse) {
+  .modal-btn:active,
+  .custom-notification:active {
+    opacity: 0.8;
+  }
+}
+
+/* Floating Basket Button */
+.floating-basket-btn {
+  position: fixed;
+  right: 20px;
+  bottom: 100px;
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+  border: 3px solid #16a34a;
+  border-radius: 50%;
+  font-size: 28px;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(74, 222, 128, 0.5);
+  z-index: 100;
+  transition: all 0.2s;
+  display: none; /* Hidden by default, shown on shop screen */
+}
+
+#shopScreen.active .floating-basket-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.floating-basket-btn:active {
+  transform: scale(0.95);
+}
+
+.basket-count {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #ef4444;
+  color: #fff;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #1a3010;
+}
+
+/* Basket Panel */
+.basket-panel {
+  position: fixed;
+  top: 0;
+  right: -100%;
+  width: 90%;
+  max-width: 400px;
+  height: 100%;
+  background: linear-gradient(180deg, #1a3010 0%, #0f1f08 100%);
+  border-left: 3px solid #4ade80;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.8);
+  z-index: 1001;
+  transition: right 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.basket-panel.show {
+  right: 0;
+}
+
+.basket-header {
+  padding: 20px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.basket-header h3 {
+  margin: 0;
+  color: #4ade80;
+  font-size: 22px;
+}
+
+.close-basket {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #fff;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.close-basket:active {
+  transform: scale(0.9);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.basket-items {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.empty-basket {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 16px;
+  padding: 60px 20px;
+  line-height: 1.6;
+}
+
+.basket-item {
+  background: rgba(74, 222, 128, 0.1);
+  border: 2px solid rgba(74, 222, 128, 0.3);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.basket-item-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.basket-item-info {
+  flex: 1;
+}
+
+.basket-item-name {
+  font-size: 15px;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.basket-item-price {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.basket-item-total {
+  font-size: 16px;
+  font-weight: bold;
+  color: #4ade80;
+  margin-right: 8px;
+}
+
+.basket-item-remove {
+  background: rgba(239, 68, 68, 0.2);
+  border: 2px solid rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.basket-item-remove:active {
+  transform: scale(0.9);
+  background: rgba(239, 68, 68, 0.3);
+}
+
+.basket-footer {
+  border-top: 2px solid rgba(255, 255, 255, 0.1);
+  padding: 20px;
+}
+
+.basket-summary {
+  margin-bottom: 16px;
+}
+
+.basket-subtotal,
+.basket-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.basket-subtotal {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.basket-total {
+  font-size: 18px;
+  font-weight: bold;
+  color: #fff;
+  padding-top: 8px;
+  border-top: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.subtotal-amount,
+.total-amount {
+  color: #4ade80;
+}
+
+.basket-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.basket-action-btn {
+  flex: 1;
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 48px;
+  border: none;
+}
+
+.basket-action-btn:active {
+  transform: scale(0.95);
+}
+
+.clear-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.clear-btn:active {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.checkout-btn {
+  background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+  color: #000;
+  box-shadow: 0 4px 12px rgba(74, 222, 128, 0.4);
+}
+
+.checkout-btn:active {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+}
+
+/* Basket Panel Backdrop */
+.basket-panel::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+}
+
+.basket-panel.show::before {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Item Details Modal */
+.item-details-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.item-details-modal.show {
+  opacity: 1;
+}
+
+.item-details-modal.show .item-details-content {
+  transform: scale(1);
+}
+
+.item-details-content {
+  position: relative;
+  background: linear-gradient(135deg, #1a3010 0%, #0f1f08 100%);
+  border: 3px solid #4ade80;
+  border-radius: 20px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+  transform: scale(0.9);
+  transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.item-details-header {
+  padding: 24px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.item-details-header h2 {
+  margin: 8px 0 0 0;
+  color: #4ade80;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.close-details {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #fff;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.close-details:active {
+  transform: scale(0.9);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.item-details-body {
+  padding: 24px;
+}
+
+.tool-description {
+  background: rgba(74, 222, 128, 0.1);
+  border-left: 4px solid #4ade80;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.detail-item {
+  background: rgba(0, 0, 0, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+}
+
+.detail-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.detail-value {
+  font-size: 18px;
+  font-weight: bold;
+  color: #4ade80;
+}
+
+.quantity-section {
+  background: rgba(0, 0, 0, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.quantity-label {
+  font-size: 14px;
+  font-weight: bold;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 12px;
+}
+
+.max-info {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: center;
+  margin-top: 12px;
+}
+
+.item-details-footer {
+  padding: 20px 24px;
+  border-top: 2px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  gap: 12px;
+}
+
+.details-btn {
+  flex: 1;
+  padding: 14px 24px;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 52px;
+}
+
+.details-btn:active {
+  transform: scale(0.95);
+}
+
+.details-btn.cancel {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.details-btn.cancel:active {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.details-btn.confirm {
+  background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+  color: #000;
+  box-shadow: 0 4px 12px rgba(74, 222, 128, 0.4);
+}
+
+.details-btn.confirm:active {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+}
+
+.details-btn.confirm:disabled {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.3);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+@media (max-width: 640px) {
+  .item-details-content {
+    max-width: calc(100vw - 32px);
+  }
+  
+  .item-details-header h2 {
+    font-size: 20px;
+  }
+  
+  .detail-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .details-btn {
+    font-size: 15px;
+    min-height: 48px;
+  }
+}
+
+
+
+
+/* Skills Screen - Runescape Style */
+.skills-container {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  padding: 20px;
+  background: linear-gradient(180deg, #1a3010 0%, #0f1f08 100%);
+}
+
+.skills-header {
+  text-align: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.skills-header h2 {
+  font-size: 28px;
+  margin-bottom: 15px;
+  color: #4ade80;
+}
+
+.total-level-display {
+  background: rgba(74, 222, 128, 0.2);
+  border: 2px solid #4ade80;
+  border-radius: 12px;
+  padding: 12px 24px;
+  display: inline-block;
+}
+
+.total-level-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.total-level-value {
+  font-size: 32px;
+  font-weight: bold;
+  color: #4ade80;
+}
+
+.skills-table {
+  background: rgba(0, 0, 0, 0.3);
+  border: 2px solid rgba(74, 222, 128, 0.3);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.skills-table-row {
+  display: grid;
+  grid-template-columns: 60px 1fr 80px 100px;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.skills-table-row:last-child {
+  border-bottom: none;
+}
+
+.skills-table-row:hover {
+  background: rgba(74, 222, 128, 0.1);
+}
+
+.skills-table-row:active {
+  background: rgba(74, 222, 128, 0.15);
+}
+
+.skill-table-icon {
+  font-size: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.skill-table-name {
+  font-size: 16px;
+  font-weight: bold;
+  color: #fff;
+}
+
+.skill-table-level {
+  font-size: 18px;
+  font-weight: bold;
+  color: #4ade80;
+  text-align: center;
+}
+
+.skill-table-xp {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: right;
+}
+
+.skill-table-xp-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.skill-table-xp-bar-fill {
+  height: 100%;
+  background: #4ade80;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+/* Skill Details Modal */
+.skill-details-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+}
+
+.skill-details-modal.show {
+  display: flex;
+}
+
+.skill-details-content {
+  background: linear-gradient(135deg, #1a3010 0%, #0f1f08 100%);
+  border: 3px solid #4ade80;
+  border-radius: 20px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.skill-details-header {
+  padding: 24px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.skill-details-title {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.skill-details-title h3 {
+  font-size: 24px;
+  color: #4ade80;
+  margin: 0;
+}
+
+.close-skill-details {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #fff;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.close-skill-details:active {
+  transform: scale(0.9);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.skill-details-body {
+  padding: 24px;
+}
+
+.skill-detail-stat {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.skill-detail-stat:last-child {
+  border-bottom: none;
+}
+
+.skill-detail-label {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.skill-detail-value {
+  font-size: 14px;
+  font-weight: bold;
+  color: #4ade80;
+}
+
+.xp-progress-section {
+  margin: 20px 0;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+}
+
+.xp-bar-container {
+  height: 24px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  margin-bottom: 8px;
+}
+
+.xp-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #4ade80 0%, #22c55e 100%);
+  transition: width 0.3s ease;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #000;
+  font-weight: bold;
+  font-size: 12px;
+}
+
+.xp-text {
+  text-align: center;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.xp-text span {
+  color: #4ade80;
+  font-weight: bold;
+}
+
+.xp-table {
+  margin-top: 20px;
+}
+
+.xp-table-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 12px;
+}
+
+.xp-table-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.xp-table-item {
+  background: rgba(0, 0, 0, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.xp-table-item-name {
+  font-size: 14px;
+  color: #fff;
+}
+
+.xp-table-item-tier {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 2px;
+}
+
+.xp-table-item-xp {
+  font-size: 14px;
+  font-weight: bold;
+  color: #4ade80;
+}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="top-bar">
+      <div class="stats-left">
+        <div class="stat-item">
+          <div class="stat-icon">💰</div>
+          <div class="stat-content">
+            <div class="stat-label">Money</div>
+            <div class="stat-value">$<span id="money">150</span></div>
+          </div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-icon">⭐</div>
+          <div class="stat-content">
+            <div class="stat-label">Total Lvl</div>
+            <div class="stat-value"><span id="totalLevel">1</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="stats-right">
+        <!-- Future stats can go here -->
+      </div>
+    </div>
+    
+    <div class="main-content">
+      <!-- Start Menu -->
+      <div id="startMenu" class="screen active">
+        <div class="start-menu">
+          <div class="game-title">🌿 Weed Farm</div>
+          <div class="menu-buttons">
+            <button class="menu-btn" id="newGameBtn">New Game</button>
+            <button class="menu-btn" id="loadGameBtn">Load Game</button>
+            <button class="menu-btn" id="continueBtn" style="display: none;">Continue</button>
+          </div>
+          <div class="save-info" id="saveInfo">No save data found</div>
+        </div>
+      </div>
+      
+      <!-- Farm Screen -->
+      <div id="farmScreen" class="screen">
+        <div class="farm-container" id="farmContainer">
+          <div class="farm-grid" id="farmGrid"></div>
+        </div>
+        <!-- Tools Menu (only visible on farm) -->
+        <div class="tools-menu show" id="toolsMenu"></div>
+      </div>
+      
+      <!-- Map Screen -->
+      <div id="mapScreen" class="screen">
+        <div class="placeholder">
+          <div>🗺️</div>
+          <div>Map Screen</div>
+          <div style="font-size: 16px; color: rgba(255,255,255,0.4);">Coming Soon</div>
+        </div>
+      </div>
+      
+      <!-- Shop Screen -->
+      <div id="shopScreen" class="screen">
+        <div class="shop-container">
+          <div class="shop-header">
+            <h2>🪴 Shop</h2>
+            <div class="level-display">Cultivation Level: <span id="shopLevel">1</span></div>
+            <div class="shop-tabs">
+              <button class="shop-tab active" data-tab="seeds">🌱 Seeds</button>
+              <button class="shop-tab" data-tab="tools">🔧 Tools</button>
+            </div>
+          </div>
+          <div id="seedsTab" class="shop-tab-content active">
+            <div class="strain-list" id="strainList"></div>
+          </div>
+          <div id="toolsTab" class="shop-tab-content">
+            <div class="strain-list" id="toolsList"></div>
+          </div>
+        </div>
+        
+        <!-- Floating Basket Button -->
+        <button class="floating-basket-btn" id="basketBtn">
+          🛒
+          <span class="basket-count" style="display: none;">0</span>
+        </button>
+        
+        <!-- Basket Panel -->
+        <div class="basket-panel" id="basketPanel">
+          <div class="basket-header">
+            <h3>🛒 Shopping Basket</h3>
+            <button class="close-basket">✕</button>
+          </div>
+          <div class="basket-items" id="basketItems">
+            <div class="empty-basket">Your basket is empty<br>Add items from the shop!</div>
+          </div>
+          <div class="basket-footer">
+            <div class="basket-summary">
+              <div class="basket-subtotal">
+                <span>Subtotal:</span>
+                <span class="subtotal-amount">$<span id="basketSubtotal">0</span></span>
+              </div>
+              <div class="basket-total">
+                <span>Total:</span>
+                <span class="total-amount">$<span id="basketTotal">0</span></span>
+              </div>
+            </div>
+            <div class="basket-actions">
+              <button class="basket-action-btn clear-btn" id="clearBasketBtn">Clear Basket</button>
+              <button class="basket-action-btn checkout-btn" id="checkoutBtn">Checkout</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Skills Screen -->
+      <div id="skillsScreen" class="screen">
+        <div class="skills-container">
+          <div class="skills-header">
+            <h2>📊 Skills</h2>
+            <div class="total-level-display">
+              <div class="total-level-label">Total Level</div>
+              <div class="total-level-value"><span id="skillsTotalLevel">1</span></div>
+            </div>
+          </div>
+          
+          <div class="skills-list" id="skillsList">
+            <!-- Skills will be dynamically rendered here -->
+          </div>
+        </div>
+      </div>
+      
+      <!-- Inventory Screen -->
+      <div id="inventoryOverlay" class="inventory-overlay">
+        <div class="inventory-popup">
+          <div class="inventory-header">
+            <h2>🎒 Inventory & Storage</h2>
+            <button class="close-inventory">✕</button>
+          </div>
+          
+          <div class="inventory-tabs">
+            <button class="inventory-tab active" data-tab="seeds">🌱 Seeds</button>
+            <button class="inventory-tab" data-tab="product">🌿 Product</button>
+          </div>
+          
+          <div id="seedsInventoryTab" class="inventory-tab-content active">
+            <div class="inventory-capacity">Inventory: <span id="seedsCount">0</span>/10</div>
+            <div class="seed-bag sortable-inventory" id="seedBag">
+              <div class="empty-bag">No seeds in inventory!<br>Visit the shop to buy seeds.</div>
+            </div>
+          </div>
+          
+          <div id="productInventoryTab" class="inventory-tab-content">
+            <div class="inventory-capacity">Inventory: <span id="productCount">0</span>/10</div>
+            <div class="product-storage sortable-inventory" id="productInventory">
+              <div class="empty-bag">No harvested product yet!<br>Harvest plants to collect product.</div>
+            </div>
+          </div>
+          
+          <!-- Storage Section Below Inventory -->
+          <div class="storage-section">
+            <div class="storage-header">
+              <h3>🏦 Storage</h3>
+              <div class="storage-capacity">Storage: <span id="storageCount">0</span>/50</div>
+            </div>
+            <div class="storage-grid" id="storageContainer">
+              <div class="empty-bag">Storage is empty!<br>Select items and transfer here.</div>
+            </div>
+            <div class="transfer-buttons">
+              <button class="transfer-btn" id="transferToStorage">⬇️ Move to Storage</button>
+              <button class="transfer-btn" id="transferToInventory">⬆️ Move to Inventory</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bottom-nav">
+      <button class="nav-btn" data-screen="mapScreen">
+        🗺️<br>Map
+      </button>
+      <button class="nav-btn active" data-screen="farmScreen">
+        🌿<br>Farm
+      </button>
+      <button class="nav-btn" id="bagButton">
+        🎒<br>Bag
+      </button>
+      <button class="nav-btn" data-screen="skillsScreen">
+        📊<br>Skills
+      </button>
+      <button class="nav-btn" data-screen="shopScreen">
+        🪴<br>Shop
+      </button>
+    </div>
+  </div>
+
+  <!-- Load modules in order -->
+  <script src="js/data/strains.js"></script>
+  <script src="js/data/tools.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/market.js"></script>
+  <script src="js/grid.js"></script>
+  <script src="js/inventory.js"></script>
+  <script src="js/shop.js"></script>
+  <script src="js/ui-modals.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/skills.js"></script>
+  <script src="js/game.js"></script>
+
+  <script>
+// Strain Database (39 strains with variety - some fast/profit, some slow/quality)
+const STRAINS = [
+  // TEST SEEDS (FREE - for testing) 🧪
+  { id: 999, name: '🧪 Test Seed Fast', cost: 0, sellPrice: 0, growthTime: 10 * 1000, level: 1, tier: 'budget', xp: 1, type: 'balanced' },
+  { id: 998, name: '🧪 Test Seed Medium', cost: 0, sellPrice: 0, growthTime: 30 * 1000, level: 1, tier: 'premium', xp: 2, type: 'quality' },
+  { id: 997, name: '🧪 Test Seed Slow', cost: 0, sellPrice: 0, growthTime: 60 * 1000, level: 1, tier: 'elite', xp: 5, type: 'quality' },
+  
+  // BUDGET TIER (Levels 1-15) - Fast unlocks early on
+  { id: 1, name: 'Northern Lights', cost: 5, sellPrice: 15, growthTime: 3 * 60 * 1000, level: 1, tier: 'budget', xp: 5, type: 'balanced' },
+  { id: 2, name: 'White Widow', cost: 8, sellPrice: 20, growthTime: 5 * 60 * 1000, level: 2, tier: 'budget', xp: 8, type: 'quality' },
+  { id: 3, name: 'AK-47', cost: 10, sellPrice: 22, growthTime: 4 * 60 * 1000, level: 3, tier: 'budget', xp: 7, type: 'profit' },
+  { id: 4, name: 'Blue Dream', cost: 15, sellPrice: 40, growthTime: 8 * 60 * 1000, level: 4, tier: 'budget', xp: 15, type: 'quality' },
+  { id: 5, name: 'Sour Diesel', cost: 12, sellPrice: 28, growthTime: 5 * 60 * 1000, level: 5, tier: 'budget', xp: 9, type: 'profit' },
+  { id: 6, name: 'Jack Herer', cost: 20, sellPrice: 55, growthTime: 10 * 60 * 1000, level: 6, tier: 'budget', xp: 20, type: 'quality' },
+  { id: 7, name: 'Green Crack', cost: 18, sellPrice: 45, growthTime: 7 * 60 * 1000, level: 7, tier: 'budget', xp: 12, type: 'profit' },
+  { id: 8, name: 'Durban Poison', cost: 25, sellPrice: 65, growthTime: 12 * 60 * 1000, level: 8, tier: 'budget', xp: 25, type: 'quality' },
+  { id: 9, name: 'Super Silver Haze', cost: 30, sellPrice: 75, growthTime: 13 * 60 * 1000, level: 9, tier: 'budget', xp: 28, type: 'balanced' },
+  { id: 10, name: 'Trainwreck', cost: 35, sellPrice: 85, growthTime: 14 * 60 * 1000, level: 10, tier: 'budget', xp: 30, type: 'quality' },
+  { id: 11, name: 'Purple Haze', cost: 40, sellPrice: 95, growthTime: 15 * 60 * 1000, level: 11, tier: 'budget', xp: 32, type: 'balanced' },
+  { id: 12, name: 'Strawberry Cough', cost: 45, sellPrice: 105, growthTime: 16 * 60 * 1000, level: 12, tier: 'budget', xp: 35, type: 'quality' },
+  { id: 13, name: 'Amnesia Haze', cost: 38, sellPrice: 88, growthTime: 13 * 60 * 1000, level: 13, tier: 'budget', xp: 22, type: 'profit' },
+  { id: 14, name: 'Lemon Skunk', cost: 50, sellPrice: 115, growthTime: 17 * 60 * 1000, level: 14, tier: 'budget', xp: 38, type: 'quality' },
+  
+  // PREMIUM TIER (Levels 15-40)
+  { id: 15, name: 'OG Kush', cost: 60, sellPrice: 150, growthTime: 20 * 60 * 1000, level: 15, tier: 'premium', xp: 45, type: 'balanced' },
+  { id: 16, name: 'Girl Scout Cookies', cost: 70, sellPrice: 180, growthTime: 22 * 60 * 1000, level: 17, tier: 'premium', xp: 55, type: 'quality' },
+  { id: 17, name: 'Granddaddy Purple', cost: 80, sellPrice: 200, growthTime: 24 * 60 * 1000, level: 19, tier: 'premium', xp: 65, type: 'quality' },
+  { id: 18, name: 'Pineapple Express', cost: 65, sellPrice: 155, growthTime: 18 * 60 * 1000, level: 20, tier: 'premium', xp: 40, type: 'profit' },
+  { id: 19, name: 'Gelato', cost: 100, sellPrice: 250, growthTime: 28 * 60 * 1000, level: 22, tier: 'premium', xp: 80, type: 'quality' },
+  { id: 20, name: 'Wedding Cake', cost: 110, sellPrice: 275, growthTime: 30 * 60 * 1000, level: 24, tier: 'premium', xp: 85, type: 'quality' },
+  { id: 21, name: 'Zkittlez', cost: 120, sellPrice: 300, growthTime: 32 * 60 * 1000, level: 26, tier: 'premium', xp: 90, type: 'quality' },
+  { id: 22, name: 'Gorilla Glue #4', cost: 130, sellPrice: 320, growthTime: 33 * 60 * 1000, level: 28, tier: 'premium', xp: 95, type: 'balanced' },
+  { id: 23, name: 'Cherry Pie', cost: 95, sellPrice: 225, growthTime: 24 * 60 * 1000, level: 30, tier: 'premium', xp: 55, type: 'profit' },
+  { id: 24, name: 'Bubba Kush', cost: 150, sellPrice: 375, growthTime: 37 * 60 * 1000, level: 32, tier: 'premium', xp: 110, type: 'quality' },
+  { id: 25, name: 'Do-Si-Dos', cost: 160, sellPrice: 400, growthTime: 38 * 60 * 1000, level: 34, tier: 'premium', xp: 115, type: 'balanced' },
+  { id: 26, name: 'Sunset Sherbet', cost: 170, sellPrice: 425, growthTime: 40 * 60 * 1000, level: 36, tier: 'premium', xp: 120, type: 'quality' },
+  { id: 27, name: 'Animal Cookies', cost: 180, sellPrice: 450, growthTime: 42 * 60 * 1000, level: 38, tier: 'premium', xp: 125, type: 'quality' },
+  
+  // ELITE TIER (Levels 40-70)
+  { id: 28, name: 'Godfather OG', cost: 200, sellPrice: 500, growthTime: 45 * 60 * 1000, level: 40, tier: 'elite', xp: 140, type: 'quality' },
+  { id: 29, name: 'Bruce Banner', cost: 220, sellPrice: 550, growthTime: 47 * 60 * 1000, level: 43, tier: 'elite', xp: 150, type: 'balanced' },
+  { id: 30, name: 'White Fire OG', cost: 240, sellPrice: 600, growthTime: 50 * 60 * 1000, level: 46, tier: 'elite', xp: 165, type: 'quality' },
+  { id: 31, name: 'Forbidden Fruit', cost: 190, sellPrice: 470, growthTime: 38 * 60 * 1000, level: 48, tier: 'elite', xp: 110, type: 'profit' },
+  { id: 32, name: 'Ice Cream Cake', cost: 280, sellPrice: 700, growthTime: 55 * 60 * 1000, level: 50, tier: 'elite', xp: 195, type: 'quality' },
+  { id: 33, name: 'Runtz', cost: 300, sellPrice: 750, growthTime: 58 * 60 * 1000, level: 53, tier: 'elite', xp: 210, type: 'balanced' },
+  { id: 34, name: 'Biscotti', cost: 320, sellPrice: 800, growthTime: 60 * 60 * 1000, level: 56, tier: 'elite', xp: 225, type: 'quality' },
+  { id: 35, name: 'Gary Payton', cost: 340, sellPrice: 850, growthTime: 62 * 60 * 1000, level: 59, tier: 'elite', xp: 240, type: 'quality' },
+  { id: 36, name: 'Jealousy', cost: 360, sellPrice: 900, growthTime: 65 * 60 * 1000, level: 62, tier: 'elite', xp: 255, type: 'quality' },
+  { id: 37, name: 'Cereal Milk', cost: 380, sellPrice: 950, growthTime: 68 * 60 * 1000, level: 65, tier: 'elite', xp: 270, type: 'balanced' },
+  { id: 38, name: 'Permanent Marker', cost: 400, sellPrice: 1000, growthTime: 70 * 60 * 1000, level: 68, tier: 'elite', xp: 285, type: 'quality' },
+  { id: 39, name: 'Zaza', cost: 420, sellPrice: 1050, growthTime: 72 * 60 * 1000, level: 70, tier: 'elite', xp: 300, type: 'quality' },
+];
+
+// Tools Database
+const TOOLS = [
+  // MANUAL WATERING (Must refill every 4 uses)
+  { 
+    id: 1, 
+    name: 'Watering Can', 
+    description: 'Reduce growth time by 15% (4 uses per fill)',
+    cost: 5, 
+    effect: 'manual-water',
+    value: 0.85,
+    level: 1,
+    tier: 'basic',
+    emoji: '💧',
+    uses: Infinity,
+    needsRefill: true,
+    usesPerFill: 4
+  },
+  
+  // FERTILIZERS
+  { 
+    id: 2, 
+    name: 'Basic Fertilizer', 
+    description: 'Increase quality/XP by 25%',
+    cost: 100, 
+    effect: 'quality',
+    value: 1.25,
+    level: 3,
+    tier: 'basic',
+    emoji: '🌾',
+    uses: Infinity
+  },
+  { 
+    id: 3, 
+    name: 'Premium Fertilizer', 
+    description: 'Increase quality/XP by 50%',
+    cost: 500, 
+    effect: 'quality',
+    value: 1.5,
+    level: 10,
+    tier: 'premium',
+    emoji: '⚗️',
+    uses: Infinity
+  },
+  
+  // AUTOMATED SYSTEMS
+  { 
+    id: 4, 
+    name: 'Irrigation System', 
+    description: 'Auto-water all crops (25% speed boost)',
+    cost: 1000, 
+    effect: 'auto-water',
+    value: 0.75,
+    level: 15,
+    tier: 'premium',
+    emoji: '🚿',
+    uses: Infinity
+  },
+  { 
+    id: 5, 
+    name: 'Grow Lamp', 
+    description: 'Reduce growth time by 40%',
+    cost: 1500, 
+    effect: 'speed',
+    value: 0.6,
+    level: 20,
+    tier: 'premium',
+    emoji: '💡',
+    uses: Infinity
+  },
+  
+  // YIELD BOOSTERS
+  { 
+    id: 6, 
+    name: 'Quality Soil', 
+    description: 'Increase harvest value by 20%',
+    cost: 800, 
+    effect: 'yield',
+    value: 1.2,
+    level: 12,
+    tier: 'premium',
+    emoji: '🪴',
+    uses: Infinity
+  },
+  { 
+    id: 7, 
+    name: 'Premium Nutrients', 
+    description: 'Increase harvest value by 50%',
+    cost: 2000, 
+    effect: 'yield',
+    value: 1.5,
+    level: 25,
+    tier: 'elite',
+    emoji: '💊',
+    uses: Infinity
+  },
+  
+  // ADVANCED AUTOMATION
+  { 
+    id: 8, 
+    name: 'Auto-Harvester', 
+    description: 'Automatically harvests ready plants',
+    cost: 3500, 
+    effect: 'auto-harvest',
+    value: true,
+    level: 30,
+    tier: 'elite',
+    emoji: '🤖',
+    uses: Infinity
+  },
+  { 
+    id: 9, 
+    name: 'Auto-Replant', 
+    description: 'Automatically replants same strain',
+    cost: 5000, 
+    effect: 'auto-replant',
+    value: true,
+    level: 40,
+    tier: 'elite',
+    emoji: '🔄',
+    uses: Infinity
+  },
+  
+  // INSTANT BOOSTS (Consumables)
+  { 
+    id: 10, 
+    name: 'Time Skip (1hr)', 
+    description: 'Instantly advance growth by 1 hour',
+    cost: 50, 
+    effect: 'instant',
+    value: 60 * 60 * 1000,
+    level: 1,
+    tier: 'consumable',
+    emoji: '⭐',
+    uses: 1
+  },
+  { 
+    id: 11, 
+    name: 'Time Skip (5hr)', 
+    description: 'Instantly advance growth by 5 hours',
+    cost: 200, 
+    effect: 'instant',
+    value: 5 * 60 * 60 * 1000,
+    level: 15,
+    tier: 'consumable',
+    emoji: '⏩',
+    uses: 1
+  },
+];
+
+// Game State Management
+const TILE_SIZE = 80;
+
+// Game State
+let state = {
+  money: 150,
+  cultivationLevel: 1,
+  cultivationXP: 0,
+  xpToNextLevel: 100, // Increases each level
+  
+  // Skills system
+  skills: {
+    harvesting: {
+      level: 1,
+      xp: 0,
+      xpToNext: 100
+    }
+    // Future skills: planting, watering, etc.
+  },
+  totalLevel: 1, // Sum of all skill levels
+  
+  inventory: {}, // { strainId: count } - seeds (max 10 items)
+  harvestedProduct: {}, // { strainId: weight } - harvested nugs in grams (max 10 items)
+  storage: {}, // { type-id: { type: 'seed'|'product', id, quantity } } - bank storage (max 50 items)
+  inventoryLimit: 10,
+  storageLimit: 50,
+  ownedTools: {}, // { toolId: count } - for consumables, or true for permanent
+  activeTools: [], // Array of tool IDs currently active
+  selectedSeed: null, // strainId of selected seed
+  selectedTool: null, // toolId for manual tools like watering can
+  selectedMode: null, // 'water', 'harvest', or null
+  wateringCanUses: 0, // Track uses before refill needed
+  grid: [],
+  currentScreen: 'farmScreen',
+  // Market dynamics
+  strainPriceMultipliers: {}, // { strainId: multiplier } - starts at 1.0
+  strainStock: {}, // { strainId: stock } - regenerates over time
+  lastStockUpdate: Date.now(),
+  // Shopping basket
+  basket: [] // Array of { type: 'seed'|'tool', id, quantity, price }
+};
+
+// Initialize grid (10x6 with center 3x3 unlocked)
+function initGrid() {
+  state.grid = [];
+  for (let y = 0; y < 6; y++) {
+    for (let x = 0; x < 10; x++) {
+      const isCenterArea = x >= 3 && x <= 5 && y >= 1 && y <= 3;
+      const obstacles = ['🌾', '🪨', '🌲', '🌾'];
+      const costs = [15, 75, 300, 15];
+      const obstacleIndex = (x + y * 10) % 4;
+      
+      state.grid.push({
+        id: `${x}-${y}`,
+        x, y,
+        locked: !isCenterArea,
+        obstacle: !isCenterArea ? obstacles[obstacleIndex] : null,
+        cost: !isCenterArea ? costs[obstacleIndex] : 0,
+        plant: null,
+        watered: false
+      });
+    }
+  }
+}
+
+// Save game to localStorage
+function saveGame() {
+  const saveData = {
+    money: state.money,
+    cultivationLevel: state.cultivationLevel,
+    cultivationXP: state.cultivationXP,
+    skills: state.skills,
+    totalLevel: state.totalLevel,
+    inventory: state.inventory,
+    harvestedProduct: state.harvestedProduct,
+    storage: state.storage,
+    ownedTools: state.ownedTools,
+    activeTools: state.activeTools,
+    wateringCanUses: state.wateringCanUses,
+    grid: state.grid,
+    strainPriceMultipliers: state.strainPriceMultipliers,
+    strainStock: state.strainStock,
+    lastStockUpdate: state.lastStockUpdate,
+    basket: state.basket,
+    savedAt: Date.now()
+  };
+  
+  localStorage.setItem('weedFarmSave', JSON.stringify(saveData));
+  // Silent auto-save - no notification
+  updateSaveInfo();
+}
+
+// Load game from localStorage
+function loadGame() {
+  const savedData = localStorage.getItem('weedFarmSave');
+  if (!savedData) {
+    showNotification('⚠️ No save data found!', 'error');
+    return false;
+  }
+  
+  try {
+    const saveData = JSON.parse(savedData);
+    
+    // Restore state
+    state.money = saveData.money || 150;
+    state.cultivationLevel = saveData.cultivationLevel || 1;
+    state.cultivationXP = saveData.cultivationXP || 0;
+    state.skills = saveData.skills || {
+      harvesting: { level: 1, xp: 0, xpToNext: 100 }
+    };
+    state.totalLevel = saveData.totalLevel || 1;
+    state.inventory = saveData.inventory || {};
+    state.harvestedProduct = saveData.harvestedProduct || {};
+    state.storage = saveData.storage || {};
+    state.ownedTools = saveData.ownedTools || {};
+    state.activeTools = saveData.activeTools || [];
+    state.wateringCanUses = saveData.wateringCanUses || 0;
+    state.grid = saveData.grid || [];
+    state.strainPriceMultipliers = saveData.strainPriceMultipliers || {};
+    state.strainStock = saveData.strainStock || {};
+    state.lastStockUpdate = saveData.lastStockUpdate || Date.now();
+    state.basket = saveData.basket || [];
+    
+    updateMoney();
+    renderGrid();
+    showNotification('✅ Game loaded successfully!', 'success');
+    return true;
+  } catch (e) {
+    showNotification('❌ Failed to load save data!', 'error');
+    return false;
+  }
+}
+
+// Check if save exists
+function hasSaveData() {
+  return localStorage.getItem('weedFarmSave') !== null;
+}
+
+// Update save info display
+function updateSaveInfo() {
+  const saveInfo = document.getElementById('saveInfo');
+  if (!saveInfo) return;
+  
+  if (hasSaveData()) {
+    try {
+      const saveData = JSON.parse(localStorage.getItem('weedFarmSave'));
+      const date = new Date(saveData.savedAt);
+      saveInfo.textContent = `Last saved: ${date.toLocaleString()} | Level ${saveData.cultivationLevel} | $${saveData.money}`;
+    } catch (e) {
+      saveInfo.textContent = 'Save data found';
+    }
+  } else {
+    saveInfo.textContent = 'No save data found';
+  }
+}
+
+// Start new game
+function startNewGame() {
+  if (hasSaveData()) {
+    showConfirmModal(
+      '⚠️ Start New Game?',
+      'Starting a new game will overwrite your current save. Continue?',
+      () => {
+        // Reset to initial state
+        state.money = 150;
+        state.cultivationLevel = 1;
+        state.cultivationXP = 0;
+        state.skills = {
+          harvesting: { level: 1, xp: 0, xpToNext: 100 }
+        };
+        state.totalLevel = 1;
+        state.inventory = {};
+        state.harvestedProduct = {};
+        state.storage = {};
+        state.ownedTools = {};
+        state.activeTools = [];
+        state.selectedSeed = null;
+        state.selectedTool = null;
+        state.wateringCanUses = 0;
+        state.grid = [];
+        state.currentScreen = 'farmScreen';
+        state.strainPriceMultipliers = {};
+        state.strainStock = {};
+        state.lastStockUpdate = Date.now();
+        state.basket = [];
+        
+        // Reinitialize
+        initGrid();
+        initMarket();
+        
+        // Go to game
+        startGame();
+      }
+    );
+  } else {
+    // No save data, just start
+    state.money = 150;
+    state.cultivationLevel = 1;
+    state.cultivationXP = 0;
+    state.skills = {
+      harvesting: { level: 1, xp: 0, xpToNext: 100 }
+    };
+    state.totalLevel = 1;
+    state.inventory = {};
+    state.harvestedProduct = {};
+    state.storage = {};
+    state.ownedTools = {};
+    state.activeTools = [];
+    state.selectedSeed = null;
+    state.selectedTool = null;
+    state.wateringCanUses = 0;
+    state.grid = [];
+    state.currentScreen = 'farmScreen';
+    state.strainPriceMultipliers = {};
+    state.strainStock = {};
+    state.lastStockUpdate = Date.now();
+    state.basket = [];
+    
+    initGrid();
+    initMarket();
+    startGame();
+  }
+}
+
+// Start game (switch from menu to game)
+function startGame() {
+  document.getElementById('startMenu').classList.remove('active');
+  document.getElementById('farmScreen').classList.add('active');
+  state.currentScreen = 'farmScreen';
+  
+  // Show UI elements
+  document.querySelector('.top-bar').style.display = 'flex';
+  document.querySelector('.bottom-nav').style.display = 'flex';
+  
+  updateMoney();
+  renderGrid();
+  updateToolsMenu();
+  document.getElementById('toolsMenu').classList.add('show');
+  
+  // Auto-save every 10 minutes (600000ms)
+  setInterval(() => {
+    saveGame();
+  }, 600000);
+}
+
+// Skill system functions
+function addSkillXP(skillName, amount) {
+  const skill = state.skills[skillName];
+  if (!skill) return;
+  
+  skill.xp += amount;
+  
+  // Check for level up
+  while (skill.xp >= skill.xpToNext && skill.level < 100) {
+    skill.xp -= skill.xpToNext;
+    skill.level++;
+    
+    // XP needed increases - faster early levels, slower later
+    // Level 1-10: ~5% increase per level
+    // Level 10-30: ~7% increase per level  
+    // Level 30+: ~10% increase per level
+    let xpIncrease;
+    if (skill.level <= 10) {
+      xpIncrease = 1.05; // 5% increase - fast early progression
+    } else if (skill.level <= 30) {
+      xpIncrease = 1.07; // 7% increase - medium progression
+    } else {
+      xpIncrease = 1.10; // 10% increase - slower late game
+    }
+    
+    skill.xpToNext = Math.floor(skill.xpToNext * xpIncrease);
+    
+    // Update total level
+    calculateTotalLevel();
+    
+    // Show level up notification
+    showNotification(`🎉 Harvesting level up! Now level ${skill.level}`, 'success');
+  }
+}
+
+function calculateTotalLevel() {
+  let total = 0;
+  Object.keys(state.skills).forEach(skillName => {
+    total += state.skills[skillName].level;
+  });
+  state.totalLevel = total;
+}
+
+function getHarvestingLevel() {
+  return state.skills.harvesting ? state.skills.harvesting.level : 1;
+}
+
+// Market Dynamics Module
+
+// Initialize market data
+function initMarket() {
+  STRAINS.forEach(strain => {
+    // Start all at base price
+    state.strainPriceMultipliers[strain.id] = 1.0;
+    
+    // Stock levels based on tier
+    let baseStock;
+    if (strain.tier === 'budget') {
+      baseStock = 100;
+    } else if (strain.tier === 'premium') {
+      baseStock = 50;
+    } else {
+      baseStock = 20;
+    }
+    state.strainStock[strain.id] = baseStock;
+  });
+}
+
+// Update market dynamics (stock regeneration and price decay)
+function updateMarket() {
+  const now = Date.now();
+  const timeSinceUpdate = now - state.lastStockUpdate;
+  const minutesPassed = timeSinceUpdate / (60 * 1000);
+  
+  if (minutesPassed < 1) return; // Only update every minute
+  
+  STRAINS.forEach(strain => {
+    // Regenerate stock over time
+    let maxStock;
+    if (strain.tier === 'budget') {
+      maxStock = 100;
+    } else if (strain.tier === 'premium') {
+      maxStock = 50;
+    } else {
+      maxStock = 20;
+    }
+    
+    const currentStock = state.strainStock[strain.id] || 0;
+    const regenRate = maxStock * 0.1; // 10% per minute
+    state.strainStock[strain.id] = Math.min(maxStock, currentStock + (regenRate * minutesPassed));
+    
+    // Price decay towards 1.0 over time
+    const currentMultiplier = state.strainPriceMultipliers[strain.id] || 1.0;
+    if (currentMultiplier > 1.0) {
+      // Decay by 5% per minute
+      const decayRate = 0.05 * minutesPassed;
+      state.strainPriceMultipliers[strain.id] = Math.max(1.0, currentMultiplier - decayRate);
+    } else if (currentMultiplier < 1.0) {
+      // Rise by 5% per minute
+      const riseRate = 0.05 * minutesPassed;
+      state.strainPriceMultipliers[strain.id] = Math.min(1.0, currentMultiplier + riseRate);
+    }
+  });
+  
+  state.lastStockUpdate = now;
+}
+
+// Calculate current price for a strain
+function getCurrentPrice(strain) {
+  const basePrice = strain.cost;
+  const multiplier = state.strainPriceMultipliers[strain.id] || 1.0;
+  return Math.round(basePrice * multiplier);
+}
+
+// Update price after purchase (demand increases price)
+function updatePriceAfterPurchase(strainId, quantity) {
+  const strain = STRAINS.find(s => s.id === strainId);
+  
+  // Price increase based on quantity and tier scarcity
+  let priceImpact;
+  if (strain.tier === 'budget') {
+    priceImpact = 0.01 * quantity; // 1% per seed
+  } else if (strain.tier === 'premium') {
+    priceImpact = 0.02 * quantity; // 2% per seed
+  } else {
+    priceImpact = 0.03 * quantity; // 3% per seed
+  }
+  
+  const currentMultiplier = state.strainPriceMultipliers[strainId] || 1.0;
+  state.strainPriceMultipliers[strainId] = Math.min(2.0, currentMultiplier + priceImpact); // Cap at 2x
+  
+  // Reduce stock
+  state.strainStock[strainId] = Math.max(0, state.strainStock[strainId] - quantity);
+}
+
+// Farm Grid Module
+
+let hasDragged = false;
+
+// Render grid
+function renderGrid() {
+  const farmGrid = document.getElementById('farmGrid');
+  farmGrid.innerHTML = '';
+  
+  state.grid.forEach((tile) => {
+    const div = document.createElement('div');
+    div.className = tile.locked ? 'tile locked' : 'tile unlocked';
+    div.style.left = tile.x * TILE_SIZE + 'px';
+    div.style.top = tile.y * TILE_SIZE + 'px';
+    
+    // Add plantable class if seed is selected and tile is empty
+    if (!tile.locked && !tile.plant && state.selectedSeed && !tile.isWaterTap) {
+      div.classList.add('plantable');
+    }
+    
+    // Add watered class if plant is watered
+    if (tile.watered && tile.plant) {
+      div.classList.add('watered');
+    }
+    
+    if (tile.locked) {
+      // Add obstacle-specific class for sprite support
+      let obstacleClass = '';
+      if (tile.obstacle === '🌾') obstacleClass = 'obstacle-weed';
+      else if (tile.obstacle === '🪨') obstacleClass = 'obstacle-stone';
+      else if (tile.obstacle === '🌲') obstacleClass = 'obstacle-tree';
+      
+      div.classList.add(obstacleClass);
+      div.textContent = tile.obstacle;
+      const badge = document.createElement('div');
+      badge.className = 'cost-badge';
+      badge.textContent = `$${tile.cost}`;
+      div.appendChild(badge);
+    } else if (tile.planting) {
+      // Show planting animation
+      const plantingProgress = Math.min((Date.now() - tile.plantingStartTime) / 2500, 1);
+      div.classList.add('planting');
+      
+      div.innerHTML = `
+        <div class="plant-container">
+          <div class="animation-icon planting-animation">🌱</div>
+          <div class="animation-label">Planting...</div>
+          <div class="progress-bar-container">
+            <div class="progress-bar" style="width: ${plantingProgress * 100}%"></div>
+          </div>
+        </div>
+      `;
+    } else if (tile.harvesting) {
+      // Show harvesting animation - KEEP plant visible during harvest
+      const harvestProgress = Math.min((Date.now() - tile.harvestingStartTime) / 2500, 1);
+      div.classList.add('harvesting');
+      
+      // Show plant being harvested with animation overlay
+      div.innerHTML = `
+        <div class="plant-container">
+          <div class="plant-icon plant-stage-ready" style="opacity: 0.5;">🌿</div>
+          <div class="animation-icon harvesting-animation">✂️</div>
+          <div class="animation-label">Harvesting...</div>
+          <div class="progress-bar-container">
+            <div class="progress-bar" style="width: ${harvestProgress * 100}%; background: linear-gradient(90deg, #fbbf24 0%, #f59e0b 100%);"></div>
+          </div>
+        </div>
+      `;
+    } else if (tile.plant) {
+      const elapsed = Date.now() - tile.plant.plantedAt;
+      const progress = Math.min(elapsed / tile.plant.growthTime, 1);
+      const isReady = progress >= 1;
+      
+      if (isReady) {
+        div.classList.add('ready');
+      }
+      
+      // Determine growth stage and emoji
+      let stageEmoji = '🌱';
+      let stageClass = 'plant-stage-seedling';
+      if (progress >= 1) {
+        stageEmoji = '🌿'; // Ready to harvest
+        stageClass = 'plant-stage-ready';
+      } else if (progress >= 0.75) {
+        stageEmoji = '☘️'; // Flowering
+        stageClass = 'plant-stage-flowering';
+      } else if (progress >= 0.5) {
+        stageEmoji = '🌿'; // Vegetative
+        stageClass = 'plant-stage-vegetative';
+      } else if (progress >= 0.25) {
+        stageEmoji = '🌱'; // Sprout
+        stageClass = 'plant-stage-sprout';
+      } else {
+        stageEmoji = '🌱'; // Seedling
+        stageClass = 'plant-stage-seedling';
+      }
+      
+      // Calculate time remaining
+      const timeRemaining = Math.max(0, tile.plant.growthTime - elapsed);
+      const minutes = Math.floor(timeRemaining / 60000);
+      const seconds = Math.floor((timeRemaining % 60000) / 1000);
+      const timeString = isReady ? 'READY' : `${minutes}:${seconds.toString().padStart(2, '0')}`;
+      
+      div.innerHTML = `
+        <div class="plant-container">
+          ${tile.watered ? '<div class="water-indicator">💧</div>' : ''}
+          <div class="growth-timer">${timeString}</div>
+          <div class="plant-icon ${stageClass}">${stageEmoji}</div>
+          <div class="progress-bar-container">
+            <div class="progress-bar" style="width: ${progress * 100}%"></div>
+          </div>
+        </div>
+      `;
+    } else {
+      const empty = document.createElement('div');
+      empty.className = 'empty-tile';
+      empty.textContent = '+';
+      div.appendChild(empty);
+    }
+    
+    div.addEventListener('click', (e) => {
+      e.stopPropagation();
+      handleTileClick(tile);
+    });
+    
+    farmGrid.appendChild(div);
+  });
+}
+
+// Handle tile click
+function handleTileClick(tile) {
+  // Don't handle clicks if we just dragged
+  if (hasDragged) return;
+  
+  // PRIORITY 1: Planting seeds (overrides watering)
+  if (state.selectedSeed && !tile.locked && !tile.plant && !tile.planting) {
+    const strain = STRAINS.find(s => s.id === state.selectedSeed);
+    if (state.inventory[state.selectedSeed] > 0) {
+      // Start planting animation
+      tile.planting = true;
+      tile.plantingStartTime = Date.now();
+      tile.plantingStrain = strain;
+      
+      // Remove from inventory immediately
+      state.inventory[state.selectedSeed]--;
+      
+      // Deselect if no more seeds
+      if (state.inventory[state.selectedSeed] <= 0) {
+        state.selectedSeed = null;
+      }
+      
+      renderGrid();
+      
+      // After 2.5 seconds, complete the planting
+      setTimeout(() => {
+        if (!tile.planting) return; // Safety check
+        
+        // Calculate effective growth time and sell price based on PASSIVE tools only
+        let effectiveGrowthTime = strain.growthTime;
+        let effectiveSellPrice = strain.sellPrice;
+        
+        state.activeTools.forEach(toolId => {
+          const tool = TOOLS.find(t => t.id === toolId);
+          // Skip manual watering can - it's not automatic
+          if (tool.effect === 'manual-water') return;
+          
+          if (tool.effect === 'speed' || tool.effect === 'auto-water') {
+            effectiveGrowthTime *= tool.value;
+          } else if (tool.effect === 'yield') {
+            effectiveSellPrice *= tool.value;
+          }
+        });
+        
+        // Complete planting
+        tile.plant = {
+          strain: strain,
+          plantedAt: Date.now(),
+          growthTime: effectiveGrowthTime,
+          sellPrice: Math.round(effectiveSellPrice),
+          emoji: '🌱',
+          ready: false
+        };
+        
+        tile.planting = false;
+        tile.plantingStartTime = null;
+        tile.plantingStrain = null;
+        
+        renderGrid();
+      }, 2500);
+    }
+    return;
+  }
+  
+  // PRIORITY 2: Watering plants (only if no seed selected)
+  if (state.selectedTool === 1 && !state.selectedSeed) {
+    if (tile.plant && !tile.watered) {
+      // Check if can has uses left
+      if (state.wateringCanUses >= 4) {
+        showNotification('💧 Watering can is empty! Refill at the water tap', 'warning');
+        return;
+      }
+      
+      // Water the plant
+      tile.watered = true;
+      state.wateringCanUses++;
+      
+      // Apply speed boost to plant
+      const speedBoost = 0.85; // 15% faster
+      if (tile.plant.growthTime) {
+        tile.plant.growthTime = Math.floor(tile.plant.growthTime * speedBoost);
+      }
+      
+      renderGrid();
+      updateToolsMenu();
+      
+      // Deselect tool if can is now empty
+      if (state.wateringCanUses >= 4) {
+        state.selectedTool = null;
+        updateToolIndicator();
+      }
+    } else if (tile.plant && tile.watered) {
+      showNotification('💧 This plant is already watered!', 'info');
+    } else if (!tile.plant && !tile.locked) {
+      showNotification('🌱 You can only water planted crops!', 'info');
+    }
+    return;
+  }
+  
+  // PRIORITY 3: Harvest mode (if harvest button is selected)
+  if (state.selectedMode === 'harvest' && !state.selectedSeed) {
+    if (tile.plant && !tile.harvesting) {
+      const elapsed = Date.now() - tile.plant.plantedAt;
+      const isReady = elapsed >= tile.plant.growthTime;
+      
+      if (isReady) {
+        // Start harvesting animation
+        tile.harvesting = true;
+        tile.harvestingStartTime = Date.now();
+        
+        // Store plant data before starting animation
+        const harvestData = {
+          strain: tile.plant.strain,
+          strainName: tile.plant.strain.name,
+          strainId: tile.plant.strain.id,
+          watered: tile.watered
+        };
+        
+        renderGrid();
+        
+        // After 2.5 seconds, complete the harvest
+        setTimeout(() => {
+          if (!tile.harvesting) return; // Safety check
+          
+          // Calculate yield in grams (base yield + modifiers) + XP
+          // Pass the watered state from the stored harvestData
+          const result = calculateYield(harvestData.strain, { watered: harvestData.watered });
+          const baseYield = result.yield;
+          const xpGained = result.xp;
+          
+          // Add to harvested product inventory
+          if (!state.harvestedProduct[harvestData.strainId]) {
+            state.harvestedProduct[harvestData.strainId] = 0;
+          }
+          state.harvestedProduct[harvestData.strainId] += baseYield;
+          
+          // Add harvesting XP
+          addSkillXP('harvesting', xpGained);
+          
+          // Clear plant
+          tile.plant = null;
+          tile.watered = false;
+          tile.harvesting = false;
+          tile.harvestingStartTime = null;
+          
+          renderGrid();
+          showNotification(`🌿 Harvested ${baseYield}g of ${harvestData.strainName}! (+${xpGained} XP)`, 'success');
+        }, 2500);
+      } else {
+        const timeRemaining = tile.plant.growthTime - elapsed;
+        const minutes = Math.floor(timeRemaining / 60000);
+        showNotification(`⏳ Still growing... ${minutes} minutes remaining`, 'info');
+      }
+    } else if (!tile.locked && !tile.plant && !tile.harvesting) {
+      showNotification('🌱 No plant to harvest!', 'info');
+    }
+    return;
+  }
+  
+  // PRIORITY 4: Other interactions
+  if (tile.locked) {
+    if (state.money >= tile.cost) {
+      showConfirmModal(
+        '🔓 Clear Obstacle?',
+        `Clear ${tile.obstacle} for $${tile.cost}?`,
+        () => {
+          state.money -= tile.cost;
+          tile.locked = false;
+          tile.obstacle = null;
+          updateMoney();
+          renderGrid();
+        }
+      );
+    } else {
+      showNotification('💰 Not enough money to clear!', 'error');
+    }
+  }
+}
+
+// Refill watering can
+function refillWateringCan() {
+  state.wateringCanUses = 0;
+  updateToolsMenu();
+  showNotification('💧 Watering can refilled!', 'success');
+}
+
+// Setup farm grid scrolling with panning
+function setupFarmPanning() {
+  const container = document.getElementById('farmContainer');
+  const grid = document.getElementById('farmGrid');
+  let isPanning = false;
+  let startX, startY;
+  let scrollLeft, scrollTop;
+  
+  // Touch events
+  container.addEventListener('touchstart', (e) => {
+    isPanning = true;
+    hasDragged = false;
+    startX = e.touches[0].pageX - container.offsetLeft;
+    startY = e.touches[0].pageY - container.offsetTop;
+    scrollLeft = container.scrollLeft;
+    scrollTop = container.scrollTop;
+  });
+  
+  container.addEventListener('touchmove', (e) => {
+    if (!isPanning) return;
+    e.preventDefault();
+    hasDragged = true;
+    const x = e.touches[0].pageX - container.offsetLeft;
+    const y = e.touches[0].pageY - container.offsetTop;
+    const walkX = (x - startX) * 1.5;
+    const walkY = (y - startY) * 1.5;
+    container.scrollLeft = scrollLeft - walkX;
+    container.scrollTop = scrollTop - walkY;
+  });
+  
+  container.addEventListener('touchend', () => {
+    isPanning = false;
+    setTimeout(() => hasDragged = false, 50);
+  });
+  
+  // Mouse events for desktop
+  container.addEventListener('mousedown', (e) => {
+    isPanning = true;
+    hasDragged = false;
+    startX = e.pageX - container.offsetLeft;
+    startY = e.pageY - container.offsetTop;
+    scrollLeft = container.scrollLeft;
+    scrollTop = container.scrollTop;
+    container.style.cursor = 'grabbing';
+  });
+  
+  container.addEventListener('mousemove', (e) => {
+    if (!isPanning) return;
+    e.preventDefault();
+    hasDragged = true;
+    const x = e.pageX - container.offsetLeft;
+    const y = e.pageY - container.offsetTop;
+    const walkX = (x - startX) * 1.5;
+    const walkY = (y - startY) * 1.5;
+    container.scrollLeft = scrollLeft - walkX;
+    container.scrollTop = scrollTop - walkY;
+  });
+  
+  container.addEventListener('mouseup', () => {
+    isPanning = false;
+    container.style.cursor = 'grab';
+    setTimeout(() => hasDragged = false, 50);
+  });
+  
+  container.addEventListener('mouseleave', () => {
+    isPanning = false;
+    container.style.cursor = 'grab';
+  });
+}
+
+// Update tools menu
+function updateToolsMenu() {
+  const toolsMenu = document.getElementById('toolsMenu');
+  if (!toolsMenu) return;
+  
+  toolsMenu.innerHTML = '';
+  
+  // Add handle for swiping
+  const handle = document.createElement('div');
+  handle.className = 'tools-handle';
+  handle.innerHTML = '<div class="handle-icon">👈</div>';
+  handle.addEventListener('click', () => {
+    toolsMenu.classList.toggle('expanded');
+  });
+  toolsMenu.appendChild(handle);
+  
+  // Harvest button (always available)
+  const harvestBtn = document.createElement('div');
+  harvestBtn.className = `tool-button ${state.selectedMode === 'harvest' ? 'active' : ''}`;
+  harvestBtn.innerHTML = `
+    ✂️
+    <div class="tool-label">
+      Harvest Mode<br>
+      Collect your grown plants
+    </div>
+  `;
+  harvestBtn.addEventListener('click', () => {
+    toggleHarvestMode();
+  });
+  toolsMenu.appendChild(harvestBtn);
+  
+  // Just show watering can for now
+  const wateringCan = TOOLS.find(t => t.id === 1);
+  
+  if (wateringCan) {
+    const isUnlocked = state.cultivationLevel >= wateringCan.level;
+    const isOwned = state.ownedTools[wateringCan.id];
+    const isSelected = state.selectedTool === wateringCan.id;
+    const usesLeft = 4 - state.wateringCanUses;
+    const isEmpty = state.wateringCanUses >= 4;
+    
+    // Watering can button
+    const toolBtn = document.createElement('div');
+    toolBtn.className = `tool-button ${isSelected ? 'active' : ''} ${!isOwned ? 'locked' : ''} ${isEmpty && isOwned ? 'disabled' : ''}`;
+    toolBtn.innerHTML = `
+      ${wateringCan.emoji}
+      ${!isOwned ? `<span class="tool-lock-badge">🔒 $${wateringCan.cost}</span>` : ''}
+      ${isOwned ? `<span class="tool-uses">${usesLeft}/4</span>` : ''}
+      <div class="tool-label">
+        ${wateringCan.name}<br>
+        ${isOwned ? wateringCan.description : `Locked - Buy in shop for $${wateringCan.cost}`}
+      </div>
+    `;
+    
+    if (isOwned) {
+      toolBtn.addEventListener('click', () => {
+        selectWateringCan();
+      });
+    } else {
+      toolBtn.addEventListener('click', () => {
+        showConfirmModal(
+          '🛒 Buy Tool?',
+          `Buy ${wateringCan.name} for $${wateringCan.cost}?`,
+          () => {
+            if (state.money >= wateringCan.cost) {
+              state.money -= wateringCan.cost;
+              state.ownedTools[wateringCan.id] = true;
+              updateMoney();
+              updateToolsMenu();
+              showNotification(`✅ ${wateringCan.name} purchased! Click it to use.`, 'success');
+            } else {
+              showNotification('💰 Not enough money!', 'error');
+            }
+          }
+        );
+      });
+    }
+    
+    toolsMenu.appendChild(toolBtn);
+    
+    // Refill button (only if owned)
+    if (isOwned) {
+      const refillBtn = document.createElement('button');
+      refillBtn.className = 'refill-button';
+      refillBtn.textContent = 'Refill 🚰';
+      refillBtn.disabled = usesLeft === 4;
+      refillBtn.addEventListener('click', () => {
+        refillWateringCan();
+      });
+      toolsMenu.appendChild(refillBtn);
+    }
+  }
+}
+
+// Toggle watering can selection
+function selectWateringCan() {
+  if (!state.ownedTools[1]) {
+    return;
+  }
+  
+  if (state.wateringCanUses >= 4) {
+    showNotification('💧 Watering can is empty! Click "Refill 🚰" button', 'warning');
+    return;
+  }
+  
+  if (state.selectedTool === 1) {
+    state.selectedTool = null;
+  } else {
+    state.selectedTool = 1;
+    state.selectedSeed = null;
+    state.selectedMode = null; // Deselect harvest mode
+  }
+  
+  updateToolsMenu();
+  updateToolIndicator();
+  renderGrid();
+}
+
+// Toggle harvest mode
+function toggleHarvestMode() {
+  if (state.selectedMode === 'harvest') {
+    state.selectedMode = null;
+  } else {
+    state.selectedMode = 'harvest';
+    state.selectedTool = null; // Deselect watering can
+    state.selectedSeed = null; // Deselect seed
+  }
+  
+  updateToolsMenu();
+  updateToolIndicator();
+  renderGrid();
+}
+
+// Update tool indicator UI
+function updateToolIndicator() {
+  let indicator = document.getElementById('toolIndicator');
+  
+  if (!indicator) {
+    indicator = document.createElement('div');
+    indicator.id = 'toolIndicator';
+    indicator.className = 'tool-indicator';
+    document.body.appendChild(indicator);
+  }
+  
+  // Only show if on farm screen
+  if (state.currentScreen !== 'farmScreen') {
+    indicator.classList.remove('show');
+    return;
+  }
+  
+  if (state.selectedTool === 1) {
+    const usesLeft = 4 - state.wateringCanUses;
+    indicator.textContent = `💧 Watering Can (${usesLeft}/4 uses)`;
+    indicator.classList.add('show');
+  } else if (state.selectedMode === 'harvest') {
+    indicator.textContent = `✂️ Harvest Mode`;
+    indicator.classList.add('show');
+  } else {
+    indicator.classList.remove('show');
+  }
+}
+
+// Calculate yield based on strain and modifiers
+function calculateYield(strain, tile) {
+  const harvestingLevel = getHarvestingLevel();
+  
+  // Base yield in grams - NERFED and scales with level
+  // Level 1: 1-2g, Level 50: ~15-25g, Level 100: ~30-50g
+  let baseYield = 0;
+  
+  // Tier-based starting yields (very low)
+  if (strain.tier === 'budget') {
+    baseYield = 1 + Math.random() * 1; // 1-2g base
+  } else if (strain.tier === 'premium') {
+    baseYield = 1.5 + Math.random() * 1.5; // 1.5-3g base
+  } else if (strain.tier === 'elite') {
+    baseYield = 2 + Math.random() * 2; // 2-4g base
+  }
+  
+  // Scale with harvesting level (linear increase)
+  // At level 100, yields are ~15x base amount
+  const levelMultiplier = 1 + (harvestingLevel - 1) * 0.15; // +15% per level
+  baseYield *= levelMultiplier;
+  
+  // Additional modifiers
+  let modifier = 1.0;
+  
+  // Watered plants get +20% yield
+  if (tile.watered) {
+    modifier += 0.2;
+  }
+  
+  // TODO: Add seasonal modifiers
+  // TODO: Add fertilizer modifiers
+  // TODO: Add other environmental factors
+  
+  const finalYield = Math.round(baseYield * modifier * 10) / 10; // Round to 1 decimal
+  
+  // Calculate XP gained (based on yield)
+  const xpGained = Math.floor(finalYield * 2); // 2 XP per gram
+  
+  return { yield: finalYield, xp: xpGained };
+}
+
+// Setup swipe gestures for tools menu
+function setupToolsMenuSwipe() {
+  const toolsMenu = document.getElementById('toolsMenu');
+  if (!toolsMenu) return;
+  
+  let touchStartX = 0;
+  let touchEndX = 0;
+  
+  const handleSwipe = () => {
+    const swipeDistance = touchStartX - touchEndX;
+    
+    // Swipe left to open (from right edge)
+    if (swipeDistance > 50 && !toolsMenu.classList.contains('expanded')) {
+      toolsMenu.classList.add('expanded');
+    }
+    // Swipe right to close
+    else if (swipeDistance < -50 && toolsMenu.classList.contains('expanded')) {
+      toolsMenu.classList.remove('expanded');
+    }
+  };
+  
+  toolsMenu.addEventListener('touchstart', (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+  });
+  
+  toolsMenu.addEventListener('touchend', (e) => {
+    touchEndX = e.changedTouches[0].screenX;
+    handleSwipe();
+  });
+  
+  // Also allow swiping from right edge of screen
+  const farmContainer = document.getElementById('farmContainer');
+  if (farmContainer) {
+    farmContainer.addEventListener('touchstart', (e) => {
+      const touch = e.changedTouches[0];
+      // Check if touch started near right edge
+      if (touch.screenX > window.innerWidth - 50) {
+        touchStartX = touch.screenX;
+      }
+    });
+    
+    farmContainer.addEventListener('touchend', (e) => {
+      const touch = e.changedTouches[0];
+      if (touchStartX > window.innerWidth - 50) {
+        touchEndX = touch.screenX;
+        handleSwipe();
+      }
+    });
+  }
+}
+
+// Inventory management with selection + transfer system
+
+let selectedInventoryItems = new Set(); // Set of "type-id" strings
+let selectedStorageItems = new Set();
+
+// Helper: Count items in inventory
+function getInventoryCount(type) {
+  if (type === 'seeds') {
+    return Object.keys(state.inventory).filter(id => state.inventory[id] > 0).length;
+  } else if (type === 'product') {
+    return Object.keys(state.harvestedProduct).filter(id => state.harvestedProduct[id] > 0).length;
+  }
+  return 0;
+}
+
+// Helper: Count items in storage
+function getStorageCount() {
+  return Object.keys(state.storage).length;
+}
+
+// Helper: Check if can add to inventory
+function canAddToInventory(type) {
+  const count = getInventoryCount(type);
+  return count < state.inventoryLimit;
+}
+
+// Helper: Check if can add to storage
+function canAddToStorage() {
+  const count = getStorageCount();
+  return count < state.storageLimit;
+}
+
+// Update capacity counters
+function updateCapacityCounters() {
+  const seedsCount = getInventoryCount('seeds');
+  const productCount = getInventoryCount('product');
+  const storageCount = getStorageCount();
+  
+  document.getElementById('seedsCount').textContent = seedsCount;
+  document.getElementById('productCount').textContent = productCount;
+  document.getElementById('storageCount').textContent = storageCount;
+}
+
+// Render seeds inventory tab
+function renderSeedsInventory() {
+  const seedBag = document.getElementById('seedBag');
+  if (!seedBag) return;
+  
+  seedBag.innerHTML = '';
+  
+  const hasSeeds = Object.keys(state.inventory).some(id => state.inventory[id] > 0);
+  
+  if (!hasSeeds) {
+    seedBag.innerHTML = '<div class="empty-bag">No seeds in inventory!<br>Visit the shop to buy seeds.</div>';
+    updateCapacityCounters();
+    return;
+  }
+  
+  // Show all seeds in inventory
+  Object.keys(state.inventory).forEach(strainId => {
+    const count = state.inventory[strainId];
+    if (count <= 0) return;
+    
+    const strain = STRAINS.find(s => s.id === parseInt(strainId));
+    if (!strain) return;
+    
+    const itemKey = `seed-${strainId}`;
+    const isSelected = selectedInventoryItems.has(itemKey);
+    
+    const stack = document.createElement('div');
+    stack.className = `seed-stack ${state.selectedSeed === strain.id ? 'selected' : ''} ${isSelected ? 'selected' : ''}`;
+    stack.dataset.type = 'seed';
+    stack.dataset.id = strainId;
+    stack.dataset.key = itemKey;
+    
+    stack.innerHTML = `
+      <div class="seed-count">x${count}</div>
+      <div class="seed-icon">🌱</div>
+      <div class="seed-name">${strain.name}</div>
+    `;
+    
+    stack.addEventListener('click', (e) => {
+      // If holding shift/ctrl, toggle selection for transfer
+      if (e.shiftKey || e.ctrlKey || e.metaKey) {
+        if (isSelected) {
+          selectedInventoryItems.delete(itemKey);
+        } else {
+          selectedInventoryItems.add(itemKey);
+        }
+        renderInventory();
+      } else {
+        // Normal click - select seed for planting
+        state.selectedSeed = strain.id;
+        document.getElementById('inventoryOverlay').classList.remove('show');
+        renderGrid();
+      }
+    });
+    
+    seedBag.appendChild(stack);
+  });
+  
+  updateCapacityCounters();
+}
+
+// Render product inventory tab
+function renderProductInventory() {
+  const productInventory = document.getElementById('productInventory');
+  if (!productInventory) return;
+  
+  productInventory.innerHTML = '';
+  
+  const hasProduct = Object.keys(state.harvestedProduct).some(id => state.harvestedProduct[id] > 0);
+  
+  if (!hasProduct) {
+    productInventory.innerHTML = '<div class="empty-bag">No harvested product yet!<br>Harvest plants to collect product.</div>';
+    updateCapacityCounters();
+    return;
+  }
+  
+  // Show all harvested product
+  Object.keys(state.harvestedProduct).forEach(strainId => {
+    const weight = state.harvestedProduct[strainId];
+    if (weight <= 0) return;
+    
+    const strain = STRAINS.find(s => s.id === parseInt(strainId));
+    if (!strain) return;
+    
+    const itemKey = `product-${strainId}`;
+    const isSelected = selectedInventoryItems.has(itemKey);
+    
+    const item = document.createElement('div');
+    item.className = `product-item ${isSelected ? 'selected' : ''}`;
+    item.dataset.type = 'product';
+    item.dataset.id = strainId;
+    item.dataset.key = itemKey;
+    
+    item.innerHTML = `
+      <div class="product-weight">${weight}g</div>
+      <div class="product-icon">🌿</div>
+      <div class="product-name">${strain.name}</div>
+      <div class="product-quality quality-fresh">Fresh</div>
+    `;
+    
+    item.addEventListener('click', () => {
+      if (isSelected) {
+        selectedInventoryItems.delete(itemKey);
+      } else {
+        selectedInventoryItems.add(itemKey);
+      }
+      renderInventory();
+    });
+    
+    productInventory.appendChild(item);
+  });
+  
+  updateCapacityCounters();
+}
+
+// Render storage section
+function renderStorage() {
+  const storageContainer = document.getElementById('storageContainer');
+  if (!storageContainer) return;
+  
+  storageContainer.innerHTML = '';
+  
+  const hasItems = Object.keys(state.storage).length > 0;
+  
+  if (!hasItems) {
+    storageContainer.innerHTML = '<div class="empty-bag">Storage is empty!<br>Select items and transfer here.</div>';
+    updateCapacityCounters();
+    return;
+  }
+  
+  // Show all storage items (smaller grid)
+  Object.keys(state.storage).forEach(key => {
+    const storageItem = state.storage[key];
+    const strain = STRAINS.find(s => s.id === parseInt(storageItem.id));
+    if (!strain) return;
+    
+    const isSelected = selectedStorageItems.has(key);
+    
+    const item = document.createElement('div');
+    item.className = `storage-item-small ${isSelected ? 'selected' : ''}`;
+    item.dataset.storageKey = key;
+    item.dataset.type = storageItem.type;
+    item.dataset.id = storageItem.id;
+    
+    if (storageItem.type === 'seed') {
+      item.innerHTML = `
+        <div class="seed-count">x${storageItem.quantity}</div>
+        <div class="seed-icon">🌱</div>
+        <div class="seed-name">${strain.name}</div>
+      `;
+    } else {
+      item.innerHTML = `
+        <div class="product-weight">${storageItem.quantity}g</div>
+        <div class="product-icon">🌿</div>
+        <div class="product-name">${strain.name}</div>
+      `;
+    }
+    
+    item.addEventListener('click', () => {
+      if (isSelected) {
+        selectedStorageItems.delete(key);
+      } else {
+        selectedStorageItems.add(key);
+      }
+      renderStorage();
+    });
+    
+    storageContainer.appendChild(item);
+  });
+  
+  updateCapacityCounters();
+}
+
+// Transfer selected items to storage
+function transferToStorage() {
+  if (selectedInventoryItems.size === 0) {
+    showNotification('⚠️ No items selected!', 'warning');
+    return;
+  }
+  
+  if (getStorageCount() + selectedInventoryItems.size > state.storageLimit) {
+    showNotification('⚠️ Not enough storage space!', 'warning');
+    return;
+  }
+  
+  selectedInventoryItems.forEach(itemKey => {
+    const [type, id] = itemKey.split('-');
+    
+    if (type === 'seed') {
+      const quantity = state.inventory[id];
+      delete state.inventory[id];
+      state.storage[itemKey] = { type: 'seed', id: parseInt(id), quantity };
+    } else if (type === 'product') {
+      const weight = state.harvestedProduct[id];
+      delete state.harvestedProduct[id];
+      state.storage[itemKey] = { type: 'product', id: parseInt(id), quantity: weight };
+    }
+  });
+  
+  showNotification(`📦 Moved ${selectedInventoryItems.size} item(s) to storage`, 'success');
+  selectedInventoryItems.clear();
+  renderInventory();
+}
+
+// Transfer selected items to inventory
+function transferToInventory() {
+  if (selectedStorageItems.size === 0) {
+    showNotification('⚠️ No items selected!', 'warning');
+    return;
+  }
+  
+  // Check if there's space for each type
+  let seedCount = 0;
+  let productCount = 0;
+  
+  selectedStorageItems.forEach(key => {
+    const item = state.storage[key];
+    if (item.type === 'seed') seedCount++;
+    else if (item.type === 'product') productCount++;
+  });
+  
+  if (getInventoryCount('seeds') + seedCount > state.inventoryLimit ||
+      getInventoryCount('product') + productCount > state.inventoryLimit) {
+    showNotification('⚠️ Not enough inventory space!', 'warning');
+    return;
+  }
+  
+  selectedStorageItems.forEach(key => {
+    const item = state.storage[key];
+    delete state.storage[key];
+    
+    if (item.type === 'seed') {
+      state.inventory[item.id] = item.quantity;
+    } else if (item.type === 'product') {
+      state.harvestedProduct[item.id] = item.quantity;
+    }
+  });
+  
+  showNotification(`🎒 Moved ${selectedStorageItems.size} item(s) to inventory`, 'success');
+  selectedStorageItems.clear();
+  renderInventory();
+}
+
+// Render inventory (all sections)
+function renderInventory() {
+  renderSeedsInventory();
+  renderProductInventory();
+  renderStorage();
+}
+
+// Setup inventory event listeners
+function setupInventoryListeners() {
+  // Bag button - toggle inventory overlay
+  document.getElementById('bagButton').addEventListener('click', () => {
+    const overlay = document.getElementById('inventoryOverlay');
+    overlay.classList.add('show');
+    renderInventory();
+  });
+  
+  // Close inventory button
+  document.querySelector('.close-inventory').addEventListener('click', () => {
+    document.getElementById('inventoryOverlay').classList.remove('show');
+    selectedInventoryItems.clear();
+    selectedStorageItems.clear();
+  });
+  
+  // Close inventory on backdrop click
+  document.getElementById('inventoryOverlay').addEventListener('click', (e) => {
+    if (e.target.id === 'inventoryOverlay') {
+      document.getElementById('inventoryOverlay').classList.remove('show');
+      selectedInventoryItems.clear();
+      selectedStorageItems.clear();
+    }
+  });
+  
+  // Setup inventory tab switching
+  document.querySelectorAll('.inventory-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const tabName = tab.dataset.tab;
+      
+      // Update active tab button
+      document.querySelectorAll('.inventory-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      
+      // Update active content
+      document.querySelectorAll('.inventory-tab-content').forEach(c => c.classList.remove('active'));
+      document.getElementById(`${tabName}InventoryTab`).classList.add('active');
+      
+      // Clear selections when switching tabs
+      selectedInventoryItems.clear();
+      renderInventory();
+    });
+  });
+  
+  // Transfer buttons
+  document.getElementById('transferToStorage').addEventListener('click', transferToStorage);
+  document.getElementById('transferToInventory').addEventListener('click', transferToInventory);
+}
+
+// Shop Management Module
+
+// Render shop
+function renderShop() {
+  const shopLevel = document.getElementById('shopLevel');
+  shopLevel.textContent = state.cultivationLevel;
+  
+  renderSeeds();
+  renderTools();
+  updateBasketUI();
+  
+  // Setup tab switching
+  document.querySelectorAll('.shop-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const tabName = tab.dataset.tab;
+      
+      // Update active tab button
+      document.querySelectorAll('.shop-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      
+      // Update active content
+      document.querySelectorAll('.shop-tab-content').forEach(c => c.classList.remove('active'));
+      document.getElementById(`${tabName}Tab`).classList.add('active');
+    });
+  });
+  
+  // Setup basket button
+  const basketBtn = document.getElementById('basketBtn');
+  const basketPanel = document.getElementById('basketPanel');
+  const closeBasket = document.querySelector('.close-basket');
+  
+  if (basketBtn && basketPanel) {
+    basketBtn.addEventListener('click', () => {
+      basketPanel.classList.add('show');
+      renderBasketPanel();
+    });
+    
+    if (closeBasket) {
+      closeBasket.addEventListener('click', () => {
+        basketPanel.classList.remove('show');
+      });
+    }
+    
+    // Close on backdrop click
+    basketPanel.addEventListener('click', (e) => {
+      if (e.target === basketPanel) {
+        basketPanel.classList.remove('show');
+      }
+    });
+  }
+  
+  // Setup checkout button
+  const checkoutBtn = document.getElementById('checkoutBtn');
+  if (checkoutBtn) {
+    checkoutBtn.addEventListener('click', () => {
+      checkout();
+    });
+  }
+  
+  // Setup clear basket button
+  const clearBasketBtn = document.getElementById('clearBasketBtn');
+  if (clearBasketBtn) {
+    clearBasketBtn.addEventListener('click', () => {
+      if (state.basket.length > 0) {
+        showConfirmModal(
+          '🗑️ Clear Basket?',
+          'Remove all items from your basket?',
+          () => clearBasket()
+        );
+      }
+    });
+  }
+}
+
+// Render seeds list
+function renderSeeds() {
+  const strainList = document.getElementById('strainList');
+  strainList.innerHTML = '';
+  
+  // Update market first
+  updateMarket();
+  
+  STRAINS.forEach(strain => {
+    const isUnlocked = state.cultivationLevel >= strain.level;
+    const currentPrice = getCurrentPrice(strain);
+    const canAfford = state.money >= currentPrice;
+    const stock = Math.floor(state.strainStock[strain.id] || 0);
+    const outOfStock = stock <= 0;
+    const priceChange = ((state.strainPriceMultipliers[strain.id] || 1.0) - 1) * 100;
+    
+    const card = document.createElement('div');
+    card.className = `strain-card ${!isUnlocked ? 'locked' : ''}`;
+    
+    if (isUnlocked) {
+      const priceIndicator = priceChange > 0 ? `📈` : priceChange < 0 ? `📉` : '';
+      
+      card.innerHTML = `
+        <div class="strain-info">
+          <div class="strain-tier tier-${strain.tier}">${strain.tier}</div>
+          <div class="strain-name">${strain.name}</div>
+          <div class="strain-stats">
+            <span>💰 $${currentPrice} ${priceIndicator}</span>
+            <span>📈 $${strain.sellPrice}</span>
+            <span>⏱️ ${Math.round(strain.growthTime / 60000)}m</span>
+            <span style="color: ${stock < 10 ? '#ef4444' : stock < 30 ? '#fbbf24' : '#4ade80'}; font-size: 10px;">
+              📦 ${outOfStock ? 'OUT' : stock}
+            </span>
+          </div>
+        </div>
+      `;
+      
+      if (!outOfStock && canAfford) {
+        card.addEventListener('click', (e) => {
+          e.stopPropagation();
+          showStrainDetails(strain);
+        });
+      } else {
+        card.style.opacity = '0.5';
+        card.style.cursor = 'not-allowed';
+      }
+    } else {
+      card.innerHTML = `
+        <div class="strain-info">
+          <div class="strain-tier tier-${strain.tier}">${strain.tier}</div>
+          <div class="strain-name">${strain.name}</div>
+          <div class="strain-stats">
+            <span style="font-size: 10px;">???</span>
+          </div>
+          <div class="locked-requirement">
+            🔒 Lv ${strain.level}
+          </div>
+        </div>
+      `;
+    }
+    
+    strainList.appendChild(card);
+  });
+}
+
+// Render tools list
+function renderTools() {
+  const toolsList = document.getElementById('toolsList');
+  toolsList.innerHTML = '';
+  
+  TOOLS.forEach(tool => {
+    const isUnlocked = state.cultivationLevel >= tool.level;
+    const canAfford = state.money >= tool.cost;
+    const isOwned = state.ownedTools[tool.id];
+    const isPermanent = tool.uses === Infinity;
+    
+    const card = document.createElement('div');
+    card.className = `strain-card ${!isUnlocked ? 'locked' : ''}`;
+    
+    if (isUnlocked) {
+      const buttonText = isOwned && isPermanent ? 'Owned' : 'Add to Basket';
+      const buttonDisabled = (isOwned && isPermanent) || !canAfford;
+      
+      card.innerHTML = `
+        <div class="strain-info">
+          <div class="strain-tier tier-${tool.tier}">${tool.tier}</div>
+          <div class="strain-name">${tool.emoji} ${tool.name}</div>
+          <div class="strain-stats">
+            <span>${tool.description}</span>
+          </div>
+          <div class="strain-stats">
+            <span>💰 $${tool.cost}</span>
+            ${isOwned && !isPermanent ? `<span>📦 x${state.ownedTools[tool.id]}</span>` : ''}
+          </div>
+        </div>
+      `;
+      
+      if (!buttonDisabled) {
+        card.addEventListener('click', (e) => {
+          e.stopPropagation();
+          showToolDetails(tool);
+        });
+      } else {
+        card.style.opacity = '0.5';
+        card.style.cursor = 'not-allowed';
+      }
+    } else {
+      card.innerHTML = `
+        <div class="strain-info">
+          <div class="strain-tier tier-${tool.tier}">${tool.tier}</div>
+          <div class="strain-name">${tool.emoji} ${tool.name}</div>
+          <div class="strain-stats">
+            <span style="font-size: 10px;">???</span>
+          </div>
+          <div class="locked-requirement">
+            🔒 Lv ${tool.level}
+          </div>
+        </div>
+      `;
+    }
+    
+    toolsList.appendChild(card);
+  });
+}
+
+// Buy tool
+function buyTool(tool) {
+  if (state.money >= tool.cost) {
+    state.money -= tool.cost;
+    
+    if (tool.uses === Infinity) {
+      // Permanent tool
+      state.ownedTools[tool.id] = true;
+      state.activeTools.push(tool.id);
+    } else {
+      // Consumable tool
+      if (!state.ownedTools[tool.id]) {
+        state.ownedTools[tool.id] = 0;
+      }
+      state.ownedTools[tool.id]++;
+    }
+    
+    updateMoney();
+    renderShop();
+    
+    const message = tool.uses === Infinity 
+      ? `✅ ${tool.name} purchased!\n🔧 Now active on all plants.`
+      : `✅ ${tool.name} purchased!`;
+    showNotification(message, 'success');
+  }
+}
+
+// Show strain details modal
+function showStrainDetails(strain) {
+  // Remove any existing popup
+  const existing = document.querySelector('.item-details-modal');
+  if (existing) existing.remove();
+  
+  const currentPrice = getCurrentPrice(strain);
+  const stock = Math.floor(state.strainStock[strain.id] || 0);
+  const maxAffordable = Math.floor(state.money / currentPrice);
+  const maxPurchase = Math.min(maxAffordable, stock);
+  const priceChange = ((state.strainPriceMultipliers[strain.id] || 1.0) - 1) * 100;
+  const priceIndicator = priceChange > 0 ? `📈 +${priceChange.toFixed(0)}%` : priceChange < 0 ? `📉 ${priceChange.toFixed(0)}%` : '➡️ Stable';
+  
+  // Create modal
+  const modal = document.createElement('div');
+  modal.className = 'item-details-modal';
+  
+  modal.innerHTML = `
+    <div class="modal-backdrop"></div>
+    <div class="item-details-content">
+      <div class="item-details-header">
+        <div>
+          <div class="strain-tier tier-${strain.tier}">${strain.tier}</div>
+          <h2>${strain.name}</h2>
+        </div>
+        <button class="close-details">✕</button>
+      </div>
+      
+      <div class="item-details-body">
+        <div class="detail-grid">
+          <div class="detail-item">
+            <div class="detail-label">💰 Buy Price</div>
+            <div class="detail-value">$${currentPrice}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">📈 Sell Price</div>
+            <div class="detail-value">$${strain.sellPrice}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">⏱️ Growth Time</div>
+            <div class="detail-value">${Math.round(strain.growthTime / 60000)} min</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">⭐ XP Reward</div>
+            <div class="detail-value">${strain.xp} XP</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">📊 Market</div>
+            <div class="detail-value">${priceIndicator}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">📦 Stock</div>
+            <div class="detail-value" style="color: ${stock < 10 ? '#ef4444' : stock < 30 ? '#fbbf24' : '#4ade80'}">${stock}</div>
+          </div>
+        </div>
+        
+        <div class="quantity-section">
+          <div class="quantity-label">Select Quantity:</div>
+          <div class="quantity-buttons">
+            <button class="qty-btn" data-qty="1" ${maxPurchase < 1 ? 'disabled' : ''}>1x</button>
+            <button class="qty-btn" data-qty="5" ${maxPurchase < 5 ? 'disabled' : ''}>5x</button>
+            <button class="qty-btn" data-qty="10" ${maxPurchase < 10 ? 'disabled' : ''}>10x</button>
+          </div>
+          <div class="custom-input-row">
+            <input type="number" class="custom-input" placeholder="Custom amount" min="1" max="${maxPurchase}" id="customQty" value="1">
+          </div>
+          <div class="max-info">You can afford: ${maxAffordable} • In stock: ${stock}</div>
+        </div>
+      </div>
+      
+      <div class="item-details-footer">
+        <button class="details-btn cancel">Cancel</button>
+        <button class="details-btn confirm">🛒 Add to Basket</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  // Animate in
+  setTimeout(() => modal.classList.add('show'), 10);
+  
+  // Handle quantity button clicks
+  modal.querySelectorAll('.qty-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const qty = parseInt(btn.dataset.qty);
+      document.getElementById('customQty').value = qty;
+    });
+  });
+  
+  // Handle close
+  const closeBtn = modal.querySelector('.close-details');
+  const backdrop = modal.querySelector('.modal-backdrop');
+  const cancelBtn = modal.querySelector('.cancel');
+  
+  const handleClose = () => {
+    modal.classList.remove('show');
+    setTimeout(() => modal.remove(), 300);
+  };
+  
+  closeBtn.addEventListener('click', handleClose);
+  backdrop.addEventListener('click', handleClose);
+  cancelBtn.addEventListener('click', handleClose);
+  
+  // Handle confirm - Add to basket
+  modal.querySelector('.confirm').addEventListener('click', () => {
+    const qty = parseInt(document.getElementById('customQty').value) || 0;
+    if (qty > 0 && qty <= maxPurchase) {
+      // Check inventory space
+      const currentSeedCount = Object.keys(state.inventory).filter(id => state.inventory[id] > 0).length;
+      const hasSpace = currentSeedCount < state.inventoryLimit || state.inventory[strain.id];
+      
+      if (!hasSpace) {
+        showNotification('⚠️ Inventory full! Move seeds to storage first.', 'warning');
+        return;
+      }
+      
+      addToBasket('seed', strain.id, qty, currentPrice);
+      handleClose();
+      showNotification(`🛒 Added ${qty}x ${strain.name} to basket`, 'success');
+    } else if (qty > maxPurchase) {
+      showNotification(`⚠️ Maximum you can buy: ${maxPurchase}!`, 'warning');
+    } else {
+      showNotification('⚠️ Please enter a valid quantity.', 'warning');
+    }
+  });
+}
+
+// Show tool details modal
+function showToolDetails(tool) {
+  // Remove any existing popup
+  const existing = document.querySelector('.item-details-modal');
+  if (existing) existing.remove();
+  
+  const canAfford = state.money >= tool.cost;
+  const isOwned = state.ownedTools[tool.id];
+  const isPermanent = tool.uses === Infinity;
+  
+  // Create modal
+  const modal = document.createElement('div');
+  modal.className = 'item-details-modal';
+  
+  modal.innerHTML = `
+    <div class="modal-backdrop"></div>
+    <div class="item-details-content">
+      <div class="item-details-header">
+        <div>
+          <div class="strain-tier tier-${tool.tier}">${tool.tier}</div>
+          <h2>${tool.emoji} ${tool.name}</h2>
+        </div>
+        <button class="close-details">✕</button>
+      </div>
+      
+      <div class="item-details-body">
+        <div class="tool-description">${tool.description}</div>
+        
+        <div class="detail-grid">
+          <div class="detail-item">
+            <div class="detail-label">💰 Price</div>
+            <div class="detail-value">$${tool.cost}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">🔓 Unlock Level</div>
+            <div class="detail-value">Level ${tool.level}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">📦 Type</div>
+            <div class="detail-value">${isPermanent ? 'Permanent' : 'Consumable'}</div>
+          </div>
+          ${isOwned && !isPermanent ? `
+          <div class="detail-item">
+            <div class="detail-label">🎒 Owned</div>
+            <div class="detail-value">x${state.ownedTools[tool.id]}</div>
+          </div>
+          ` : ''}
+        </div>
+      </div>
+      
+      <div class="item-details-footer">
+        <button class="details-btn cancel">Cancel</button>
+        <button class="details-btn confirm" ${!canAfford ? 'disabled' : ''}>
+          🛒 Add to Basket
+        </button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  // Animate in
+  setTimeout(() => modal.classList.add('show'), 10);
+  
+  // Handle close
+  const closeBtn = modal.querySelector('.close-details');
+  const backdrop = modal.querySelector('.modal-backdrop');
+  const cancelBtn = modal.querySelector('.cancel');
+  
+  const handleClose = () => {
+    modal.classList.remove('show');
+    setTimeout(() => modal.remove(), 300);
+  };
+  
+  closeBtn.addEventListener('click', handleClose);
+  backdrop.addEventListener('click', handleClose);
+  cancelBtn.addEventListener('click', handleClose);
+  
+  // Handle confirm
+  const confirmBtn = modal.querySelector('.confirm');
+  if (canAfford) {
+    confirmBtn.addEventListener('click', () => {
+      addToBasket('tool', tool.id, 1, tool.cost);
+      handleClose();
+      showNotification(`🛒 Added ${tool.name} to basket`, 'success');
+    });
+  }
+}
+
+// Old function kept for backwards compatibility - redirects to new details view
+function showBuyOptions(strain, card) {
+  showStrainDetails(strain);
+}
+
+// Buy strain
+function buyStrain(strain, quantity = 1) {
+  const currentPrice = getCurrentPrice(strain);
+  const totalCost = currentPrice * quantity;
+  
+  if (state.money >= totalCost) {
+    state.money -= totalCost;
+    
+    // Add to inventory
+    if (!state.inventory[strain.id]) {
+      state.inventory[strain.id] = 0;
+    }
+    state.inventory[strain.id] += quantity;
+    
+    // Update market dynamics
+    updatePriceAfterPurchase(strain.id, quantity);
+    
+    updateMoney();
+    renderShop();
+    showNotification(`✅ Purchased ${quantity}x ${strain.name}\n💰 Total: $${totalCost}`, 'success');
+  }
+}
+
+// Add item to basket
+function addToBasket(type, id, quantity, price) {
+  // Check if item already in basket
+  const existingIndex = state.basket.findIndex(item => item.type === type && item.id === id);
+  
+  if (existingIndex !== -1) {
+    // Update quantity
+    state.basket[existingIndex].quantity += quantity;
+  } else {
+    // Add new item
+    state.basket.push({
+      type: type, // 'seed' or 'tool'
+      id: id,
+      quantity: quantity,
+      price: price
+    });
+  }
+  
+  updateBasketUI();
+}
+
+// Remove item from basket
+function removeFromBasket(index) {
+  state.basket.splice(index, 1);
+  updateBasketUI();
+  showNotification('🗑️ Item removed from basket', 'info');
+}
+
+// Clear entire basket
+function clearBasket() {
+  state.basket = [];
+  updateBasketUI();
+  showNotification('🗑️ Basket cleared', 'info');
+}
+
+// Calculate basket total
+function getBasketTotal() {
+  return state.basket.reduce((total, item) => {
+    return total + (item.price * item.quantity);
+  }, 0);
+}
+
+// Checkout - purchase all items in basket
+function checkout() {
+  if (state.basket.length === 0) {
+    showNotification('🛒 Your basket is empty!', 'warning');
+    return;
+  }
+  
+  const total = getBasketTotal();
+  
+  if (state.money < total) {
+    showNotification(`💰 Not enough money! Need $${total}, have $${state.money}`, 'error');
+    return;
+  }
+  
+  showConfirmModal(
+    '💳 Checkout',
+    `Purchase ${state.basket.length} item(s) for $${total}?`,
+    () => {
+      // Process each item
+      state.basket.forEach(item => {
+        if (item.type === 'seed') {
+          const strain = STRAINS.find(s => s.id === item.id);
+          if (!state.inventory[item.id]) {
+            state.inventory[item.id] = 0;
+          }
+          state.inventory[item.id] += item.quantity;
+          updatePriceAfterPurchase(item.id, item.quantity);
+        } else if (item.type === 'tool') {
+          const tool = TOOLS.find(t => t.id === item.id);
+          if (tool.uses === Infinity) {
+            state.ownedTools[item.id] = true;
+            state.activeTools.push(item.id);
+          } else {
+            if (!state.ownedTools[item.id]) {
+              state.ownedTools[item.id] = 0;
+            }
+            state.ownedTools[item.id] += item.quantity;
+          }
+        }
+      });
+      
+      // Deduct money
+      state.money -= total;
+      
+      // Clear basket
+      const itemCount = state.basket.length;
+      state.basket = [];
+      
+      updateMoney();
+      updateBasketUI();
+      renderShop();
+      
+      showNotification(`✅ Purchased ${itemCount} item(s)!\n💰 Spent: $${total}`, 'success');
+    }
+  );
+}
+
+// Update basket UI
+function updateBasketUI() {
+  const basketBtn = document.getElementById('basketBtn');
+  const basketCount = state.basket.reduce((sum, item) => sum + item.quantity, 0);
+  const basketTotal = getBasketTotal();
+  
+  if (basketBtn) {
+    const countBadge = basketBtn.querySelector('.basket-count');
+    if (countBadge) {
+      countBadge.textContent = basketCount;
+      countBadge.style.display = basketCount > 0 ? 'block' : 'none';
+    }
+  }
+  
+  // Update basket panel if open
+  const basketPanel = document.getElementById('basketPanel');
+  if (basketPanel && basketPanel.classList.contains('show')) {
+    renderBasketPanel();
+  }
+}
+
+// Render basket panel
+function renderBasketPanel() {
+  const basketItems = document.getElementById('basketItems');
+  const basketTotal = document.getElementById('basketTotal');
+  const basketSubtotal = document.getElementById('basketSubtotal');
+  
+  if (!basketItems) return;
+  
+  basketItems.innerHTML = '';
+  
+  if (state.basket.length === 0) {
+    basketItems.innerHTML = '<div class="empty-basket">Your basket is empty<br>Add items from the shop!</div>';
+    if (basketTotal) basketTotal.textContent = '0';
+    if (basketSubtotal) basketSubtotal.textContent = '0';
+    return;
+  }
+  
+  state.basket.forEach((item, index) => {
+    let itemName = '';
+    let itemEmoji = '';
+    
+    if (item.type === 'seed') {
+      const strain = STRAINS.find(s => s.id === item.id);
+      itemName = strain.name;
+      itemEmoji = '🌱';
+    } else {
+      const tool = TOOLS.find(t => t.id === item.id);
+      itemName = tool.name;
+      itemEmoji = tool.emoji;
+    }
+    
+    const itemTotal = item.price * item.quantity;
+    
+    const itemDiv = document.createElement('div');
+    itemDiv.className = 'basket-item';
+    itemDiv.innerHTML = `
+      <div class="basket-item-icon">${itemEmoji}</div>
+      <div class="basket-item-info">
+        <div class="basket-item-name">${itemName}</div>
+        <div class="basket-item-price">$${item.price} × ${item.quantity}</div>
+      </div>
+      <div class="basket-item-total">$${itemTotal}</div>
+      <button class="basket-item-remove" data-index="${index}">✕</button>
+    `;
+    
+    basketItems.appendChild(itemDiv);
+  });
+  
+  // Add remove button listeners
+  basketItems.querySelectorAll('.basket-item-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const index = parseInt(btn.dataset.index);
+      removeFromBasket(index);
+    });
+  });
+  
+  const total = getBasketTotal();
+  if (basketTotal) basketTotal.textContent = total;
+  if (basketSubtotal) basketSubtotal.textContent = total;
+}
+
+// Custom Modal and Notification System
+
+// Show custom notification (replaces alert)
+function showNotification(message, type = 'info') {
+  // Remove any existing notification
+  const existing = document.querySelector('.custom-notification');
+  if (existing) existing.remove();
+  
+  const notification = document.createElement('div');
+  notification.className = `custom-notification ${type}`;
+  notification.innerHTML = `
+    <div class="notification-content">
+      <div class="notification-icon">${getNotificationIcon(type)}</div>
+      <div class="notification-message">${message}</div>
+    </div>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  // Animate in
+  setTimeout(() => notification.classList.add('show'), 10);
+  
+  // Auto remove after 3 seconds
+  setTimeout(() => {
+    notification.classList.remove('show');
+    setTimeout(() => notification.remove(), 300);
+  }, 3000);
+  
+  // Tap to dismiss
+  notification.addEventListener('click', () => {
+    notification.classList.remove('show');
+    setTimeout(() => notification.remove(), 300);
+  });
+}
+
+// Get icon based on notification type
+function getNotificationIcon(type) {
+  switch(type) {
+    case 'success': return '✅';
+    case 'error': return '❌';
+    case 'warning': return '⚠️';
+    case 'info': return 'ℹ️';
+    default: return 'ℹ️';
+  }
+}
+
+// Show custom confirm modal (replaces confirm)
+function showConfirmModal(title, message, onConfirm, onCancel = null) {
+  // Remove any existing modal
+  const existing = document.querySelector('.custom-modal');
+  if (existing) existing.remove();
+  
+  const modal = document.createElement('div');
+  modal.className = 'custom-modal';
+  modal.innerHTML = `
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>${title}</h3>
+      </div>
+      <div class="modal-body">
+        <p>${message}</p>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn cancel-btn">Cancel</button>
+        <button class="modal-btn confirm-btn">Confirm</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  // Animate in
+  setTimeout(() => modal.classList.add('show'), 10);
+  
+  // Handle cancel
+  const cancelBtn = modal.querySelector('.cancel-btn');
+  const backdrop = modal.querySelector('.modal-backdrop');
+  
+  const handleCancel = () => {
+    modal.classList.remove('show');
+    setTimeout(() => modal.remove(), 300);
+    if (onCancel) onCancel();
+  };
+  
+  cancelBtn.addEventListener('click', handleCancel);
+  backdrop.addEventListener('click', handleCancel);
+  
+  // Handle confirm
+  const confirmBtn = modal.querySelector('.confirm-btn');
+  confirmBtn.addEventListener('click', () => {
+    modal.classList.remove('show');
+    setTimeout(() => modal.remove(), 300);
+    if (onConfirm) onConfirm();
+  });
+}
+
+// Show custom prompt modal (for future use)
+function showPromptModal(title, message, defaultValue = '', onConfirm) {
+  const modal = document.createElement('div');
+  modal.className = 'custom-modal';
+  modal.innerHTML = `
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>${title}</h3>
+      </div>
+      <div class="modal-body">
+        <p>${message}</p>
+        <input type="text" class="modal-input" value="${defaultValue}" placeholder="Enter value...">
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn cancel-btn">Cancel</button>
+        <button class="modal-btn confirm-btn">Confirm</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  setTimeout(() => modal.classList.add('show'), 10);
+  
+  const input = modal.querySelector('.modal-input');
+  input.focus();
+  
+  const handleCancel = () => {
+    modal.classList.remove('show');
+    setTimeout(() => modal.remove(), 300);
+  };
+  
+  modal.querySelector('.cancel-btn').addEventListener('click', handleCancel);
+  modal.querySelector('.modal-backdrop').addEventListener('click', handleCancel);
+  
+  const handleConfirm = () => {
+    const value = input.value;
+    modal.classList.remove('show');
+    setTimeout(() => modal.remove(), 300);
+    if (onConfirm) onConfirm(value);
+  };
+  
+  modal.querySelector('.confirm-btn').addEventListener('click', handleConfirm);
+  input.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') handleConfirm();
+  });
+}
+
+// UI Management Module
+
+// Update money display
+function updateMoney() {
+  document.getElementById('money').textContent = state.money;
+}
+
+// Update total level display
+function updateTotalLevel() {
+  document.getElementById('totalLevel').textContent = state.totalLevel;
+}
+
+
+// Setup navigation
+function setupNavigation() {
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetScreen = btn.dataset.screen;
+      
+      // Skip if no screen (bag/water buttons)
+      if (!targetScreen) return;
+      
+      // Update active button
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      
+      // Update active screen
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(targetScreen).classList.add('active');
+      
+      // Show/hide tools menu based on screen
+      const toolsMenu = document.getElementById('toolsMenu');
+      if (targetScreen === 'farmScreen') {
+        toolsMenu.classList.add('show');
+        updateToolsMenu();
+        setupToolsMenuSwipe();
+      } else {
+        toolsMenu.classList.remove('show');
+        toolsMenu.classList.remove('expanded');
+      }
+      
+      // Render shop when opening it
+      if (targetScreen === 'shopScreen') {
+        renderShop();
+      }
+      
+      // Render skills when opening it
+      if (targetScreen === 'skillsScreen') {
+        renderSkills();
+      }
+      
+      state.currentScreen = targetScreen;
+    });
+  });
+}
+
+// Setup start menu
+function setupStartMenu() {
+  // New Game button
+  document.getElementById('newGameBtn').addEventListener('click', () => {
+    startNewGame();
+  });
+  
+  // Load Game button
+  document.getElementById('loadGameBtn').addEventListener('click', () => {
+    if (loadGame()) {
+      startGame();
+    }
+  });
+  
+  // Continue button (if save exists)
+  const continueBtn = document.getElementById('continueBtn');
+  if (hasSaveData()) {
+    continueBtn.style.display = 'block';
+    continueBtn.addEventListener('click', () => {
+      if (loadGame()) {
+        startGame();
+      }
+    });
+  }
+  
+  // Update save info on load
+  updateSaveInfo();
+}
+
+// Start game loop for updating plants
+function startGameLoop() {
+  // Game loop - update more frequently to show smooth animations
+  setInterval(() => {
+    if (state.currentScreen === 'farmScreen') {
+      // Check if any tiles are animating
+      const hasAnimations = state.grid.some(tile => tile.planting || tile.harvesting);
+      
+      // Render grid (animations update every frame, plants update every second)
+      renderGrid();
+    }
+    
+    // Always update total level display
+    updateTotalLevel();
+  }, 100); // Check every 100ms for smooth animation updates
+}
+
+// Skills UI management - Runescape style table
+
+// Render skills screen as table
+function renderSkills() {
+  const skillsList = document.getElementById('skillsList');
+  const totalLevelDisplay = document.getElementById('skillsTotalLevel');
+  
+  if (!skillsList) return;
+  
+  skillsList.innerHTML = '';
+  totalLevelDisplay.textContent = state.totalLevel;
+  
+  // Create skills table
+  const table = document.createElement('div');
+  table.className = 'skills-table';
+  
+  // Render each skill as a table row
+  Object.keys(state.skills).forEach(skillName => {
+    const skill = state.skills[skillName];
+    const progress = (skill.xp / skill.xpToNext) * 100;
+    
+    const skillRow = document.createElement('div');
+    skillRow.className = 'skills-table-row';
+    
+    // Get skill icon
+    const skillIcon = getSkillIcon(skillName);
+    const skillDisplayName = getSkillDisplayName(skillName);
+    
+    skillRow.innerHTML = `
+      <div class="skill-table-icon">${skillIcon}</div>
+      <div class="skill-table-info">
+        <div class="skill-table-name">${skillDisplayName}</div>
+        <div class="skill-table-xp-bar">
+          <div class="skill-table-xp-bar-fill" style="width: ${progress}%"></div>
+        </div>
+      </div>
+      <div class="skill-table-level">${skill.level}</div>
+      <div class="skill-table-xp">${skill.xp.toLocaleString()} XP</div>
+    `;
+    
+    // Click to show details
+    skillRow.addEventListener('click', () => {
+      showSkillDetails(skillName);
+    });
+    
+    table.appendChild(skillRow);
+  });
+  
+  skillsList.appendChild(table);
+}
+
+// Get skill icon emoji
+function getSkillIcon(skillName) {
+  const icons = {
+    harvesting: '✂️',
+    planting: '🌱',
+    watering: '💧'
+  };
+  return icons[skillName] || '📊';
+}
+
+// Get skill display name
+function getSkillDisplayName(skillName) {
+  return skillName.charAt(0).toUpperCase() + skillName.slice(1);
+}
+
+// Show skill details modal with XP table
+function showSkillDetails(skillName) {
+  // Remove existing modal
+  const existing = document.querySelector('.skill-details-modal');
+  if (existing) existing.remove();
+  
+  const skill = state.skills[skillName];
+  const skillIcon = getSkillIcon(skillName);
+  const skillDisplayName = getSkillDisplayName(skillName);
+  const progress = (skill.xp / skill.xpToNext) * 100;
+  
+  // Create modal
+  const modal = document.createElement('div');
+  modal.className = 'skill-details-modal show';
+  
+  // Get XP table based on skill
+  let xpTableHTML = '';
+  if (skillName === 'harvesting') {
+    xpTableHTML = generateHarvestingXPTable();
+  }
+  
+  modal.innerHTML = `
+    <div class="skill-details-content">
+      <div class="skill-details-header">
+        <div class="skill-details-title">
+          <div class="skill-table-icon" style="font-size: 48px;">${skillIcon}</div>
+          <h3>${skillDisplayName}</h3>
+        </div>
+        <button class="close-skill-details">✕</button>
+      </div>
+      
+      <div class="skill-details-body">
+        <div class="skill-detail-stat">
+          <div class="skill-detail-label">Current Level</div>
+          <div class="skill-detail-value">${skill.level} / 100</div>
+        </div>
+        <div class="skill-detail-stat">
+          <div class="skill-detail-label">Current XP</div>
+          <div class="skill-detail-value">${skill.xp.toLocaleString()} XP</div>
+        </div>
+        <div class="skill-detail-stat">
+          <div class="skill-detail-label">XP to Next Level</div>
+          <div class="skill-detail-value">${(skill.xpToNext - skill.xp).toLocaleString()} XP</div>
+        </div>
+        
+        <div class="xp-progress-section">
+          <div class="xp-bar-container">
+            <div class="xp-bar" style="width: ${progress}%">
+              ${progress >= 20 ? Math.floor(progress) + '%' : ''}
+            </div>
+          </div>
+          <div class="xp-text">
+            Progress to Level ${skill.level + 1}
+          </div>
+        </div>
+        
+        ${xpTableHTML}
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  // Handle close
+  const closeBtn = modal.querySelector('.close-skill-details');
+  closeBtn.addEventListener('click', () => {
+    modal.classList.remove('show');
+    setTimeout(() => modal.remove(), 300);
+  });
+  
+  // Close on backdrop click
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal.classList.remove('show');
+      setTimeout(() => modal.remove(), 300);
+    }
+  });
+}
+
+// Generate harvesting XP table
+function generateHarvestingXPTable() {
+  const harvestingLevel = getHarvestingLevel();
+  
+  let html = `
+    <div class="xp-table">
+      <div class="xp-table-title">XP per Harvest (at Level ${harvestingLevel})</div>
+      <div class="xp-table-list">
+  `;
+  
+  // Show XP for each strain tier
+  const sampleStrains = [
+    { name: 'Northern Lights', tier: 'budget', strain: STRAINS.find(s => s.name === 'Northern Lights') },
+    { name: 'OG Kush', tier: 'premium', strain: STRAINS.find(s => s.name === 'OG Kush') },
+    { name: 'Godfather OG', tier: 'elite', strain: STRAINS.find(s => s.name === 'Godfather OG') }
+  ];
+  
+  sampleStrains.forEach(item => {
+    if (!item.strain) return;
+    
+    // Calculate average yield and XP
+    const tile = { watered: false }; // Average without water
+    const result = calculateYield(item.strain, tile);
+    const avgYield = result.yield;
+    const xpGained = result.xp;
+    
+    // Calculate with water
+    const tileWatered = { watered: true };
+    const resultWatered = calculateYield(item.strain, tileWatered);
+    const wateredXP = resultWatered.xp;
+    
+    html += `
+      <div class="xp-table-item">
+        <div>
+          <div class="xp-table-item-name">${item.name}</div>
+          <div class="xp-table-item-tier">${item.tier} • ~${avgYield.toFixed(1)}g yield</div>
+        </div>
+        <div class="xp-table-item-xp">
+          ${xpGained} XP
+          ${wateredXP > xpGained ? `<span style="font-size: 11px; color: #3b82f6;"> (${wateredXP} 💧)</span>` : ''}
+        </div>
+      </div>
+    `;
+  });
+  
+  html += `
+      </div>
+      <div class="xp-text" style="margin-top: 16px; font-size: 12px;">
+        💧 = with watering (+20% yield)
+      </div>
+    </div>
+  `;
+  
+  return html;
+}
+
+// Setup skills screen event listeners
+function setupSkillsListeners() {
+  // Navigation will be handled by main UI
+}
+
+// Main Game Initialization
+
+// Initialize game on page load
+document.addEventListener('DOMContentLoaded', () => {
+  // Initialize game data
+  initGrid();
+  initMarket();
+  
+  // Setup UI
+  setupStartMenu();
+  setupNavigation();
+  setupInventoryListeners();
+  
+  // Initial render
+  renderGrid();
+  updateTotalLevel();
+  
+  // Show tools menu initially (since farm is default screen)
+  setTimeout(() => {
+    updateToolsMenu();
+    document.getElementById('toolsMenu').classList.add('show');
+    setupToolsMenuSwipe();
+  }, 100);
+  
+  // Start game loop
+  startGameLoop();
+  
+  console.log('🌿 Weed Farm Idle Game loaded successfully!');
+});
+
+  </script>
+</body>
+</html>
