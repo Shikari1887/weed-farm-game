@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cannabis Farm Idle</title>
+    <style>
+        /* === RESET & BASE === */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #2d5016;
+            color: #f0e68c;
+            overflow-x: hidden;
+            touch-action: manipulation;
+        }
+
+        /* === TOP BAR === */
+        #top-bar {
+            background: #1a3010;
+            border-bottom: 3px solid #4a7023;
+            padding: 12px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        #money {
+            color: #ffd700;
+        }
+
+        /* === MAIN CONTENT === */
+        #content {
+            padding: 15px;
+            min-height: calc(100vh - 120px);
+            padding-bottom: 80px;
+        }
+
+        /* === FARM VIEW === */
+        #farm-view {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 4px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .farm-tile {
+            width: 100%;
+            aspect-ratio: 1;
+            background: #3d2817;
+            border: 2px solid #5a3d2a;
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 11px;
+            position: relative;
+            padding: 2px;
+        }
+
+        .farm-tile.locked {
+            background: #1a1a1a;
+            border-color: #333;
+        }
+
+        .farm-tile.empty {
+            background: #4a3520;
+            border-color: #6a4d30;
+        }
+
+        .farm-tile.planted {
+            background: #2d5016;
+            border-color: #4a7023;
+        }
+
+        .farm-tile.ready {
+            background: #3a6b1f;
+            border-color: #5a9b2f;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        .tile-emoji {
+            font-size: 24px;
+            margin-bottom: 2px;
+        }
+
+        .tile-cost {
+            color: #ffd700;
+            font-size: 10px;
+        }
+
+        .tile-timer {
+            font-size: 9px;
+            color: #fff;
+        }
+
+        .progress-bar {
+            width: 90%;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            margin-top: 2px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #4a7023;
+            transition: width 0.3s;
+        }
+
+        /* === SHOP VIEW === */
+        #shop-view {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .shop-title {
+            font-size: 18px;
+            margin-bottom: 15px;
+            text-align: center;
+            color: #ffd700;
+        }
+
+        .seed-item {
+            background: #3d2817;
+            border: 2px solid #5a3d2a;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .seed-item.selected {
+            border-color: #ffd700;
+            background: #4a3520;
+        }
+
+        .seed-item.affordable {
+            border-color: #4a7023;
+        }
+
+        .seed-info {
+            flex: 1;
+        }
+
+        .seed-name {
+            font-weight: bold;
+            color: #90ee90;
+            margin-bottom: 3px;
+        }
+
+        .seed-stats {
+            font-size: 11px;
+            color: #ccc;
+        }
+
+        .seed-price {
+            color: #ffd700;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        /* === INVENTORY VIEW === */
+        #inventory-view {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .inventory-section {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: #ffd700;
+            border-bottom: 2px solid #4a7023;
+            padding-bottom: 5px;
+        }
+
+        .inventory-item {
+            background: #3d2817;
+            border: 2px solid #5a3d2a;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .item-name {
+            font-weight: bold;
+            color: #90ee90;
+        }
+
+        .item-quantity {
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        /* === HARVEST MODE BUTTON === */
+        #harvest-mode-btn {
+            position: fixed;
+            bottom: 70px;
+            right: 15px;
+            background: #4a7023;
+            border: 3px solid #5a9b2f;
+            border-radius: 8px;
+            padding: 12px 20px;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 50;
+            font-size: 14px;
+        }
+
+        #harvest-mode-btn.active {
+            background: #ffd700;
+            color: #1a3010;
+            border-color: #ffed4e;
+        }
+
+        /* === BOTTOM NAV === */
+        #bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1a3010;
+            border-top: 3px solid #4a7023;
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0;
+            z-index: 100;
+        }
+
+        .nav-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            color: #90ee90;
+            font-size: 14px;
+            padding: 8px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+        }
+
+        .nav-btn.active {
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        /* === UTILITY === */
+        .hidden {
+            display: none !important;
+        }
+
+        /* === NOTIFICATIONS === */
+        #notification {
+            position: fixed;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1a3010;
+            border: 2px solid #4a7023;
+            padding: 10px 20px;
+            border-radius: 4px;
+            z-index: 200;
+            display: none;
+            color: #90ee90;
+        }
+
+        #notification.show {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, -10px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
+        }
+    </style>
+</head>
+<body>
+    <!-- TOP BAR -->
+    <div id="top-bar">
+        💰 $<span id="money">150</span>
+    </div>
+
+    <!-- NOTIFICATION -->
+    <div id="notification"></div>
+
+    <!-- MAIN CONTENT -->
+    <div id="content">
+        <!-- FARM VIEW -->
+        <div id="farm-view"></div>
+
+        <!-- SHOP VIEW -->
+        <div id="shop-view" class="hidden">
+            <div class="shop-title">🌿 SEED SHOP 🌿</div>
+            <div id="seed-list"></div>
+        </div>
+
+        <!-- INVENTORY VIEW -->
+        <div id="inventory-view" class="hidden">
+            <div class="inventory-section">
+                <div class="section-title">📦 SEEDS</div>
+                <div id="seed-inventory"></div>
+            </div>
+            <div class="inventory-section">
+                <div class="section-title">🌿 PRODUCT</div>
+                <div id="product-inventory"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HARVEST MODE BUTTON (only shows in farm view) -->
+    <button id="harvest-mode-btn">🔪 HARVEST</button>
+
+    <!-- BOTTOM NAV -->
+    <div id="bottom-nav">
+        <button class="nav-btn active" onclick="switchView('farm')">🌾 FARM</button>
+        <button class="nav-btn" onclick="switchView('shop')">🏪 SHOP</button>
+        <button class="nav-btn" onclick="switchView('inventory')">🎒 BAG</button>
+    </div>
+
+    <script>
+        // ===========================
+        // GAME STATE
+        // ===========================
+        const gameState = {
+            money: 150,
+            farmGrid: [], // 6x6 array of tile objects
+            seedInventory: {}, // { seedId: quantity }
+            productInventory: {}, // { strainName: grams }
+            selectedSeed: null,
+            harvestMode: false,
+            currentView: 'farm'
+        };
+
+        // ===========================
+        // SEED DEFINITIONS
+        // ===========================
+        const seedTypes = [
+            { id: 'lowrider', name: 'Lowrider', cost: 5, growTime: 60, yield: [3, 6], emoji: '🌱' },
+            { id: 'quickie', name: 'Quickie', cost: 8, growTime: 75, yield: [4, 8], emoji: '🌱' },
+            { id: 'fastbud', name: 'FastBud', cost: 10, growTime: 90, yield: [5, 10], emoji: '🌱' },
+            { id: 'speedster', name: 'Speedster', cost: 12, growTime: 105, yield: [6, 12], emoji: '🌱' },
+            { id: 'swiftgreen', name: 'SwiftGreen', cost: 15, growTime: 120, yield: [8, 14], emoji: '🌱' },
+            { id: 'rapidfire', name: 'RapidFire', cost: 17, growTime: 135, yield: [9, 16], emoji: '🌱' },
+            { id: 'rushkush', name: 'RushKush', cost: 20, growTime: 150, yield: [10, 18], emoji: '🌱' },
+            { id: 'blitzbud', name: 'BlitzBud', cost: 18, growTime: 165, yield: [11, 20], emoji: '🌱' },
+            { id: 'turbohaze', name: 'TurboHaze', cost: 16, growTime: 180, yield: [12, 22], emoji: '🌱' },
+            { id: 'flashgrass', name: 'FlashGrass', cost: 14, growTime: 195, yield: [13, 24], emoji: '🌱' }
+        ];
+
+        // ===========================
+        // OBSTACLE DEFINITIONS
+        // ===========================
+        const obstacles = [
+            { type: 'weed', emoji: '🌾', cost: 15 },
+            { type: 'stone', emoji: '🪨', cost: 75 },
+            { type: 'tree', emoji: '🌳', cost: 300 }
+        ];
+
+        // ===========================
+        // INITIALIZATION
+        // ===========================
+        function initGame() {
+            // Initialize 6x6 grid
+            for (let i = 0; i < 36; i++) {
+                const row = Math.floor(i / 6);
+                const col = i % 6;
+                
+                // Top-left 2x2 is unlocked and empty
+                if (row < 2 && col < 2) {
+                    gameState.farmGrid.push({ locked: false, empty: true });
+                } else {
+                    // Assign random obstacle
+                    const obstacle = obstacles[Math.floor(Math.random() * obstacles.length)];
+                    gameState.farmGrid.push({ 
+                        locked: true, 
+                        obstacle: obstacle.type,
+                        emoji: obstacle.emoji,
+                        cost: obstacle.cost
+                    });
+                }
+            }
+
+            // Try to load saved game
+            loadGame();
+
+            // Render initial state
+            renderAll();
+
+            // Start game loop (runs every second)
+            setInterval(gameLoop, 1000);
+
+            // Auto-save every 60 seconds
+            setInterval(saveGame, 60000);
+        }
+
+        // ===========================
+        // GAME LOOP
+        // ===========================
+        function gameLoop() {
+            let needsUpdate = false;
+
+            // Update all planted tiles
+            gameState.farmGrid.forEach(tile => {
+                if (tile.planted && !tile.ready) {
+                    tile.timeRemaining--;
+                    if (tile.timeRemaining <= 0) {
+                        tile.ready = true;
+                        tile.timeRemaining = 0;
+                    }
+                    needsUpdate = true;
+                }
+            });
+
+            if (needsUpdate) {
+                renderFarmGrid();
+            }
+        }
+
+        // ===========================
+        // RENDERING
+        // ===========================
+        function renderAll() {
+            renderMoney();
+            renderFarmGrid();
+            renderShop();
+            renderInventory();
+        }
+
+        function renderMoney() {
+            document.getElementById('money').textContent = gameState.money;
+        }
+
+        function renderFarmGrid() {
+            const farmView = document.getElementById('farm-view');
+            
+            // Only create tiles if they don't exist
+            if (farmView.children.length === 0) {
+                gameState.farmGrid.forEach((tile, index) => {
+                    const tileDiv = document.createElement('div');
+                    tileDiv.className = 'farm-tile';
+                    tileDiv.dataset.index = index;
+                    tileDiv.onclick = () => handleTileClick(index);
+                    farmView.appendChild(tileDiv);
+                });
+            }
+
+            // Update tile contents
+            gameState.farmGrid.forEach((tile, index) => {
+                const tileDiv = farmView.children[index];
+                tileDiv.className = 'farm-tile';
+                tileDiv.innerHTML = '';
+
+                if (tile.locked) {
+                    tileDiv.classList.add('locked');
+                    const emoji = document.createElement('div');
+                    emoji.className = 'tile-emoji';
+                    emoji.textContent = tile.emoji;
+                    tileDiv.appendChild(emoji);
+                    
+                    const cost = document.createElement('div');
+                    cost.className = 'tile-cost';
+                    cost.textContent = `$${tile.cost}`;
+                    tileDiv.appendChild(cost);
+                } else if (tile.empty) {
+                    tileDiv.classList.add('empty');
+                    const emoji = document.createElement('div');
+                    emoji.className = 'tile-emoji';
+                    emoji.textContent = '⬜';
+                    tileDiv.appendChild(emoji);
+                } else if (tile.planted) {
+                    if (tile.ready) {
+                        tileDiv.classList.add('ready');
+                    } else {
+                        tileDiv.classList.add('planted');
+                    }
+
+                    const emoji = document.createElement('div');
+                    emoji.className = 'tile-emoji';
+                    emoji.textContent = tile.ready ? '🌿' : '🌱';
+                    tileDiv.appendChild(emoji);
+
+                    if (!tile.ready) {
+                        const timer = document.createElement('div');
+                        timer.className = 'tile-timer';
+                        timer.textContent = formatTime(tile.timeRemaining);
+                        tileDiv.appendChild(timer);
+
+                        const progressBar = document.createElement('div');
+                        progressBar.className = 'progress-bar';
+                        const progressFill = document.createElement('div');
+                        progressFill.className = 'progress-fill';
+                        const progress = ((tile.totalTime - tile.timeRemaining) / tile.totalTime) * 100;
+                        progressFill.style.width = progress + '%';
+                        progressBar.appendChild(progressFill);
+                        tileDiv.appendChild(progressBar);
+                    }
+                }
+            });
+        }
+
+        function renderShop() {
+            const seedList = document.getElementById('seed-list');
+            seedList.innerHTML = '';
+
+            seedTypes.forEach(seed => {
+                const seedDiv = document.createElement('div');
+                seedDiv.className = 'seed-item';
+                
+                if (gameState.selectedSeed === seed.id) {
+                    seedDiv.classList.add('selected');
+                }
+                if (gameState.money >= seed.cost) {
+                    seedDiv.classList.add('affordable');
+                }
+
+                seedDiv.onclick = () => selectSeed(seed.id);
+
+                seedDiv.innerHTML = `
+                    <div class="seed-info">
+                        <div class="seed-name">${seed.emoji} ${seed.name}</div>
+                        <div class="seed-stats">⏱️ ${formatTime(seed.growTime)} | 📦 ${seed.yield[0]}-${seed.yield[1]}g</div>
+                    </div>
+                    <div class="seed-price">$${seed.cost}</div>
+                `;
+
+                seedList.appendChild(seedDiv);
+            });
+        }
+
+        function renderInventory() {
+            // Render seed inventory
+            const seedInv = document.getElementById('seed-inventory');
+            seedInv.innerHTML = '';
+            
+            let hasSeedItems = false;
+            for (const [seedId, quantity] of Object.entries(gameState.seedInventory)) {
+                if (quantity > 0) {
+                    hasSeedItems = true;
+                    const seed = seedTypes.find(s => s.id === seedId);
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'inventory-item';
+                    itemDiv.innerHTML = `
+                        <div class="item-name">${seed.emoji} ${seed.name}</div>
+                        <div class="item-quantity">×${quantity}</div>
+                    `;
+                    seedInv.appendChild(itemDiv);
+                }
+            }
+
+            if (!hasSeedItems) {
+                seedInv.innerHTML = '<div style="text-align:center; color:#888; padding:20px;">No seeds</div>';
+            }
+
+            // Render product inventory
+            const productInv = document.getElementById('product-inventory');
+            productInv.innerHTML = '';
+            
+            let hasProductItems = false;
+            for (const [strainName, grams] of Object.entries(gameState.productInventory)) {
+                if (grams > 0) {
+                    hasProductItems = true;
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'inventory-item';
+                    itemDiv.innerHTML = `
+                        <div class="item-name">🌿 ${strainName}</div>
+                        <div class="item-quantity">${grams.toFixed(2)}g</div>
+                    `;
+                    productInv.appendChild(itemDiv);
+                }
+            }
+
+            if (!hasProductItems) {
+                productInv.innerHTML = '<div style="text-align:center; color:#888; padding:20px;">No product</div>';
+            }
+        }
+
+        // ===========================
+        // USER ACTIONS
+        // ===========================
+        function handleTileClick(index) {
+            const tile = gameState.farmGrid[index];
+
+            if (gameState.harvestMode) {
+                // Harvest mode: harvest ready plants
+                if (tile.ready) {
+                    harvestPlant(index);
+                }
+            } else {
+                // Normal mode
+                if (tile.locked) {
+                    // Unlock tile
+                    unlockTile(index);
+                } else if (tile.empty && gameState.selectedSeed) {
+                    // Plant seed
+                    plantSeed(index);
+                }
+            }
+        }
+
+        function unlockTile(index) {
+            const tile = gameState.farmGrid[index];
+            
+            if (gameState.money >= tile.cost) {
+                gameState.money -= tile.cost;
+                tile.locked = false;
+                tile.empty = true;
+                delete tile.obstacle;
+                delete tile.emoji;
+                delete tile.cost;
+                
+                showNotification(`Cleared obstacle! -$${tile.cost}`);
+                renderMoney();
+                renderFarmGrid();
+                saveGame();
+            } else {
+                showNotification(`Need $${tile.cost}!`);
+            }
+        }
+
+        function selectSeed(seedId) {
+            if (gameState.selectedSeed === seedId) {
+                gameState.selectedSeed = null;
+            } else {
+                const seed = seedTypes.find(s => s.id === seedId);
+                if (gameState.money >= seed.cost) {
+                    gameState.selectedSeed = seedId;
+                    showNotification(`Selected ${seed.name}`);
+                } else {
+                    showNotification(`Need $${seed.cost}!`);
+                }
+            }
+            renderShop();
+        }
+
+        function plantSeed(index) {
+            const seed = seedTypes.find(s => s.id === gameState.selectedSeed);
+            const tile = gameState.farmGrid[index];
+
+            if (gameState.money >= seed.cost) {
+                gameState.money -= seed.cost;
+                
+                tile.empty = false;
+                tile.planted = true;
+                tile.seedId = seed.id;
+                tile.strainName = seed.name;
+                tile.totalTime = seed.growTime;
+                tile.timeRemaining = seed.growTime;
+                tile.ready = false;
+                tile.yieldRange = seed.yield;
+
+                showNotification(`Planted ${seed.name}! -$${seed.cost}`);
+                gameState.selectedSeed = null;
+                
+                renderMoney();
+                renderFarmGrid();
+                renderShop();
+                saveGame();
+            } else {
+                showNotification(`Need $${seed.cost}!`);
+            }
+        }
+
+        function harvestPlant(index) {
+            const tile = gameState.farmGrid[index];
+            
+            // Calculate yield
+            const min = tile.yieldRange[0];
+            const max = tile.yieldRange[1];
+            const yield = Math.random() * (max - min) + min;
+
+            // Add to product inventory
+            if (!gameState.productInventory[tile.strainName]) {
+                gameState.productInventory[tile.strainName] = 0;
+            }
+            gameState.productInventory[tile.strainName] += yield;
+
+            showNotification(`Harvested ${yield.toFixed(2)}g of ${tile.strainName}!`);
+
+            // Reset tile to empty
+            tile.planted = false;
+            tile.ready = false;
+            tile.empty = true;
+            delete tile.seedId;
+            delete tile.strainName;
+            delete tile.totalTime;
+            delete tile.timeRemaining;
+            delete tile.yieldRange;
+
+            renderFarmGrid();
+            renderInventory();
+            saveGame();
+        }
+
+        function toggleHarvestMode() {
+            gameState.harvestMode = !gameState.harvestMode;
+            const btn = document.getElementById('harvest-mode-btn');
+            if (gameState.harvestMode) {
+                btn.classList.add('active');
+                btn.textContent = '✅ HARVESTING';
+                showNotification('Harvest mode ON');
+            } else {
+                btn.classList.remove('active');
+                btn.textContent = '🔪 HARVEST';
+                showNotification('Harvest mode OFF');
+            }
+        }
+
+        // ===========================
+        // VIEW SWITCHING
+        // ===========================
+        function switchView(view) {
+            gameState.currentView = view;
+
+            // Hide all views
+            document.getElementById('farm-view').classList.add('hidden');
+            document.getElementById('shop-view').classList.add('hidden');
+            document.getElementById('inventory-view').classList.add('hidden');
+
+            // Show selected view
+            document.getElementById(`${view}-view`).classList.remove('hidden');
+
+            // Update nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Show/hide harvest button
+            const harvestBtn = document.getElementById('harvest-mode-btn');
+            if (view === 'farm') {
+                harvestBtn.style.display = 'block';
+            } else {
+                harvestBtn.style.display = 'none';
+            }
+        }
+
+        // ===========================
+        // UTILITIES
+        // ===========================
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function showNotification(message) {
+            const notif = document.getElementById('notification');
+            notif.textContent = message;
+            notif.classList.add('show');
+            setTimeout(() => {
+                notif.classList.remove('show');
+            }, 2000);
+        }
+
+        // ===========================
+        // SAVE/LOAD
+        // ===========================
+        function saveGame() {
+            const saveData = {
+                money: gameState.money,
+                farmGrid: gameState.farmGrid,
+                seedInventory: gameState.seedInventory,
+                productInventory: gameState.productInventory
+            };
+            localStorage.setItem('cannabisFarmSave', JSON.stringify(saveData));
+            console.log('Game saved!');
+        }
+
+        function loadGame() {
+            const saveData = localStorage.getItem('cannabisFarmSave');
+            if (saveData) {
+                try {
+                    const data = JSON.parse(saveData);
+                    gameState.money = data.money;
+                    gameState.farmGrid = data.farmGrid;
+                    gameState.seedInventory = data.seedInventory || {};
+                    gameState.productInventory = data.productInventory || {};
+                    console.log('Game loaded!');
+                    showNotification('Game loaded!');
+                } catch (e) {
+                    console.error('Failed to load save:', e);
+                }
+            }
+        }
+
+        // ===========================
+        // EVENT LISTENERS
+        // ===========================
+        document.getElementById('harvest-mode-btn').onclick = toggleHarvestMode;
+
+        // ===========================
+        // START GAME
+        // ===========================
+        initGame();
+    </script>
+</body>
+</html>
