@@ -1,0 +1,1535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cannabis Farm Idle</title>
+    <style>
+        /* === RESET & BASE === */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #2d5016;
+            color: #f0e68c;
+            overflow-x: hidden;
+            touch-action: manipulation;
+        }
+
+        /* === TOP BAR === */
+        #top-bar {
+            background: #1a3010;
+            border-bottom: 3px solid #4a7023;
+            padding: 12px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        #money {
+            color: #ffd700;
+        }
+
+        /* === TOP NAV === */
+        #top-nav {
+            position: sticky;
+            top: 49px;
+            left: 0;
+            right: 0;
+            background: #1a3010;
+            border-bottom: 3px solid #4a7023;
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0;
+            z-index: 100;
+        }
+
+        .nav-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            color: #90ee90;
+            font-size: 14px;
+            padding: 8px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+        }
+
+        .nav-btn.active {
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        /* === MAIN CONTENT === */
+        #content {
+            padding: 15px;
+            min-height: calc(100vh - 120px);
+            padding-bottom: 20px;
+        }
+
+        /* === FARM VIEW === */
+        #farm-view {
+            display: grid;
+            grid-template-columns: repeat(9, 1fr);
+            gap: 4px;
+            max-width: 750px;
+            margin: 0 auto;
+        }
+
+        .farm-tile {
+            width: 100%;
+            aspect-ratio: 1;
+            background: #3d2817;
+            border: 2px solid #5a3d2a;
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 11px;
+            position: relative;
+            padding: 2px;
+        }
+
+        .farm-tile.locked {
+            background: #1a1a1a;
+            border-color: #333;
+        }
+
+        .farm-tile.empty {
+            background: #4a3520;
+            border-color: #6a4d30;
+        }
+
+        .farm-tile.planted {
+            background: #2d5016;
+            border-color: #4a7023;
+        }
+
+        .farm-tile.ready {
+            background: #3a6b1f;
+            border-color: #5a9b2f;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        .tile-emoji {
+            font-size: 24px;
+            margin-bottom: 2px;
+        }
+
+        .tile-cost {
+            color: #ffd700;
+            font-size: 10px;
+        }
+
+        .tile-timer {
+            font-size: 9px;
+            color: #fff;
+        }
+
+        .progress-bar {
+            width: 90%;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            margin-top: 2px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #4a7023;
+            transition: width 0.3s;
+        }
+
+        /* === SHOP VIEW === */
+        #shop-view {
+            max-width: 500px;
+            margin: 0 auto;
+            padding-bottom: 80px;
+        }
+
+        .shop-title {
+            font-size: 18px;
+            margin-bottom: 15px;
+            text-align: center;
+            color: #ffd700;
+        }
+
+        .seed-item {
+            background: #3d2817;
+            border: 2px solid #5a3d2a;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .seed-item.affordable {
+            border-color: #4a7023;
+        }
+
+        .seed-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .seed-name {
+            font-weight: bold;
+            color: #90ee90;
+            margin-bottom: 3px;
+            font-size: 13px;
+        }
+
+        .seed-stats {
+            font-size: 11px;
+            color: #ccc;
+            white-space: nowrap;
+        }
+
+        .seed-price {
+            color: #ffd700;
+            font-weight: bold;
+            font-size: 15px;
+            min-width: 30px;
+            text-align: right;
+        }
+
+        .seed-controls {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+
+        .qty-btn {
+            background: #4a7023;
+            border: 2px solid #5a9b2f;
+            border-radius: 4px;
+            padding: 4px 6px;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            min-width: 32px;
+        }
+
+        .qty-btn:disabled {
+            background: #333;
+            border-color: #555;
+            color: #888;
+            cursor: not-allowed;
+        }
+
+        .custom-qty-input {
+            width: 45px;
+            padding: 4px;
+            background: #1a3010;
+            border: 2px solid #4a7023;
+            border-radius: 4px;
+            color: #f0e68c;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            text-align: center;
+        }
+
+        .add-custom-btn {
+            background: #4a7023;
+            border: 2px solid #5a9b2f;
+            border-radius: 4px;
+            padding: 4px 6px;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+        }
+
+        .basket-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1a3010;
+            border-top: 3px solid #4a7023;
+            padding: 12px;
+            z-index: 90;
+        }
+
+        .basket-content {
+            max-width: 500px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .basket-info {
+            flex: 1;
+        }
+
+        .basket-label {
+            font-size: 12px;
+            color: #90ee90;
+            margin-bottom: 2px;
+        }
+
+        .basket-subtotal {
+            font-size: 20px;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .basket-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .clear-btn {
+            background: #6a4d30;
+            border: 2px solid #8a6d50;
+            border-radius: 4px;
+            padding: 8px 16px;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .checkout-btn {
+            background: #4a7023;
+            border: 2px solid #5a9b2f;
+            border-radius: 4px;
+            padding: 8px 20px;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+
+        .checkout-btn:disabled {
+            background: #333;
+            border-color: #555;
+            color: #888;
+            cursor: not-allowed;
+        }
+
+        /* === INVENTORY VIEW === */
+        #inventory-view {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        /* === SKILLS VIEW === */
+        #skills-view {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .skill-card {
+            background: #3d2817;
+            border: 2px solid #5a3d2a;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .skill-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .skill-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #90ee90;
+        }
+
+        .skill-level {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .skill-xp-bar {
+            width: 100%;
+            height: 20px;
+            background: #1a3010;
+            border: 2px solid #4a7023;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+            position: relative;
+        }
+
+        .skill-xp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4a7023, #5a9b2f);
+            transition: width 0.3s;
+        }
+
+        .skill-xp-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 11px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 1px 1px 2px #000;
+        }
+
+        .skill-info {
+            font-size: 12px;
+            color: #ccc;
+            line-height: 1.6;
+        }
+
+        .skill-bonus {
+            margin-top: 10px;
+            padding: 8px;
+            background: #2d5016;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .bonus-label {
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        .xp-rates {
+            margin-top: 10px;
+            padding: 8px;
+            background: #1a3010;
+            border-radius: 4px;
+        }
+
+        .xp-rate-title {
+            color: #90ee90;
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 12px;
+        }
+
+        .xp-rate-item {
+            font-size: 11px;
+            color: #ccc;
+            margin: 3px 0;
+        }
+
+        .inventory-section {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: #ffd700;
+            border-bottom: 2px solid #4a7023;
+            padding-bottom: 5px;
+        }
+
+        .inventory-item {
+            background: #3d2817;
+            border: 2px solid #5a3d2a;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .item-info {
+            flex: 1;
+        }
+
+        .item-name {
+            font-weight: bold;
+            color: #90ee90;
+        }
+
+        .item-quantity {
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        .item-value {
+            font-size: 11px;
+            color: #ccc;
+            margin-top: 2px;
+        }
+
+        .sell-btn {
+            background: #4a7023;
+            border: 2px solid #5a9b2f;
+            border-radius: 4px;
+            padding: 6px 12px;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+
+        .sell-all-section {
+            background: #1a3010;
+            border: 2px solid #4a7023;
+            border-radius: 4px;
+            padding: 12px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .sell-all-btn {
+            background: #ffd700;
+            border: 2px solid #ffed4e;
+            border-radius: 4px;
+            padding: 10px 20px;
+            color: #1a3010;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+
+        .sell-all-value {
+            color: #90ee90;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+
+        /* === HARVEST MODE BUTTON === */
+        #harvest-mode-btn {
+            position: fixed;
+            bottom: 15px;
+            right: 15px;
+            background: #4a7023;
+            border: 3px solid #5a9b2f;
+            border-radius: 8px;
+            padding: 12px 20px;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 50;
+            font-size: 14px;
+        }
+
+        #harvest-mode-btn.active {
+            background: #ffd700;
+            color: #1a3010;
+            border-color: #ffed4e;
+        }
+
+        /* === PLANT MODE BUTTON === */
+        #plant-mode-btn {
+            position: fixed;
+            bottom: 15px;
+            left: 15px;
+            background: #4a7023;
+            border: 3px solid #5a9b2f;
+            border-radius: 8px;
+            padding: 12px 20px;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 50;
+            font-size: 14px;
+        }
+
+        #plant-mode-btn.active {
+            background: #5a9b2f;
+            color: #fff;
+            border-color: #6ab03f;
+        }
+
+        /* === BOTTOM NAV === */
+        #bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1a3010;
+            border-top: 3px solid #4a7023;
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0;
+            z-index: 100;
+        }
+
+        .nav-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            color: #90ee90;
+            font-size: 14px;
+            padding: 8px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+        }
+
+        .nav-btn.active {
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        /* === UTILITY === */
+        .hidden {
+            display: none !important;
+        }
+
+        /* === NOTIFICATIONS === */
+        #notification {
+            position: fixed;
+            top: 110px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1a3010;
+            border: 2px solid #4a7023;
+            padding: 10px 20px;
+            border-radius: 4px;
+            z-index: 200;
+            display: none;
+            color: #90ee90;
+        }
+
+        #notification.show {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, -10px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
+        }
+    </style>
+</head>
+<body>
+    <!-- TOP BAR -->
+    <div id="top-bar">
+        $<span id="money">150</span>
+    </div>
+
+    <!-- TOP NAV -->
+    <div id="top-nav">
+        <button class="nav-btn active" onclick="switchView('farm')">🌾 FARM</button>
+        <button class="nav-btn" onclick="switchView('shop')">🏪 SHOP</button>
+        <button class="nav-btn" onclick="switchView('inventory')">🎒 BAG</button>
+        <button class="nav-btn" onclick="switchView('skills')">⭐ SKILLS</button>
+    </div>
+
+    <!-- NOTIFICATION -->
+    <div id="notification"></div>
+
+    <!-- MAIN CONTENT -->
+    <div id="content">
+        <!-- FARM VIEW -->
+        <div id="farm-view"></div>
+
+        <!-- SHOP VIEW -->
+        <div id="shop-view" class="hidden">
+            <div class="shop-title">🌿 SEED SHOP 🌿</div>
+            <div id="seed-list"></div>
+        </div>
+
+        <!-- BASKET PANEL (only shows in shop view) -->
+        <div id="basket-panel" class="basket-panel hidden">
+            <div class="basket-content">
+                <div class="basket-info">
+                    <div class="basket-label">BASKET SUBTOTAL:</div>
+                    <div class="basket-subtotal">$<span id="basket-total">0</span></div>
+                </div>
+                <div class="basket-actions">
+                    <button class="clear-btn" onclick="clearBasket()">CLEAR</button>
+                    <button class="checkout-btn" onclick="checkoutBasket()">CHECKOUT</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- INVENTORY VIEW -->
+        <div id="inventory-view" class="hidden">
+            <div class="inventory-section">
+                <div class="section-title">📦 SEEDS</div>
+                <div id="seed-inventory"></div>
+            </div>
+            <div class="inventory-section">
+                <div class="section-title">🌿 PRODUCT</div>
+                <div id="product-inventory"></div>
+            </div>
+        </div>
+
+        <!-- SKILLS VIEW -->
+        <div id="skills-view" class="hidden">
+            <div id="skills-list"></div>
+        </div>
+    </div>
+
+    <!-- PLANT & HARVEST MODE BUTTONS (only show in farm view) -->
+    <button id="plant-mode-btn">🌱 PLANT</button>
+    <button id="harvest-mode-btn">🔪 HARVEST</button>
+
+    <script>
+        // ===========================
+        // GAME STATE
+        // ===========================
+        const gameState = {
+            money: 150,
+            farmGrid: [], // 6x6 array of tile objects
+            seedInventory: {}, // { seedId: quantity }
+            productInventory: {}, // { strainName: grams }
+            selectedSeedForPlanting: null, // Selected seed from inventory for planting
+            harvestMode: false,
+            plantMode: false,
+            currentView: 'farm',
+            basket: {}, // { seedId: quantity } - temporary shopping basket
+            skills: {
+                harvesting: {
+                    level: 1,
+                    xp: 0,
+                    xpToNext: 100
+                }
+            }
+        };
+
+        // ===========================
+        // SEED DEFINITIONS
+        // ===========================
+        const seedTypes = [
+            // LOW TIER (Lv 1-10) - 5-15 XP - 80% profit margin
+            { id: 'bushweed', name: 'Bush Weed', cost: 5, sellPrice: 9, growTime: 60, yield: [1, 2], emoji: '🌱', tier: 'low', levelReq: 1, xp: 5 },
+            { id: 'redthai', name: 'Red Thai', cost: 8, sellPrice: 14, growTime: 65, yield: [1, 2], emoji: '🌱', tier: 'low', levelReq: 3, xp: 7 },
+            { id: 'mexicanbrick', name: 'Mexican Brick', cost: 12, sellPrice: 22, growTime: 70, yield: [1, 2], emoji: '🌱', tier: 'low', levelReq: 5, xp: 9 },
+            { id: 'columbianred', name: 'Columbian Red', cost: 18, sellPrice: 32, growTime: 75, yield: [1, 2], emoji: '🌱', tier: 'low', levelReq: 7, xp: 12 },
+            { id: 'acapulcogold', name: 'Acapulco Gold', cost: 25, sellPrice: 45, growTime: 80, yield: [1, 2], emoji: '🌱', tier: 'low', levelReq: 10, xp: 15 },
+            
+            // BUDGET TIER (Lv 12-20) - 18-28 XP - 100% profit margin
+            { id: 'northernlights', name: 'Northern Lights', cost: 35, sellPrice: 70, growTime: 85, yield: [1, 2], emoji: '🌱', tier: 'budget', levelReq: 12, xp: 18 },
+            { id: 'afghankush', name: 'Afghan Kush', cost: 45, sellPrice: 90, growTime: 90, yield: [1, 2], emoji: '🌱', tier: 'budget', levelReq: 15, xp: 22 },
+            { id: 'skunk1', name: 'Skunk #1', cost: 60, sellPrice: 120, growTime: 95, yield: [1, 2], emoji: '🌱', tier: 'budget', levelReq: 18, xp: 25 },
+            { id: 'whiterhino', name: 'White Rhino', cost: 75, sellPrice: 150, growTime: 100, yield: [1, 2], emoji: '🌱', tier: 'budget', levelReq: 20, xp: 28 },
+            
+            // PREMIUM TIER (Lv 23-35) - 35-55 XP - 120% profit margin
+            { id: 'blueberry', name: 'Blueberry', cost: 95, sellPrice: 210, growTime: 105, yield: [1, 2], emoji: '🌱', tier: 'premium', levelReq: 23, xp: 35 },
+            { id: 'grandaddypurple', name: 'Granddaddy Purple', cost: 120, sellPrice: 265, growTime: 110, yield: [1, 2], emoji: '🌱', tier: 'premium', levelReq: 26, xp: 40 },
+            { id: 'chemdawg', name: 'Chemdawg', cost: 150, sellPrice: 330, growTime: 115, yield: [1, 2], emoji: '🌱', tier: 'premium', levelReq: 29, xp: 45 },
+            { id: 'sournerdiesel', name: 'Sour Diesel', cost: 185, sellPrice: 410, growTime: 120, yield: [1, 2], emoji: '🌱', tier: 'premium', levelReq: 32, xp: 50 },
+            { id: 'ogkush', name: 'OG Kush', cost: 225, sellPrice: 495, growTime: 125, yield: [1, 2], emoji: '🌱', tier: 'premium', levelReq: 35, xp: 55 },
+            
+            // ELITE TIER (Lv 40-50) - 70-95 XP - 140% profit margin
+            { id: 'girlscoutcookies', name: 'Girl Scout Cookies', cost: 275, sellPrice: 660, growTime: 130, yield: [1, 2], emoji: '🌱', tier: 'elite', levelReq: 40, xp: 70 },
+            { id: 'gorrillaglue', name: 'Gorilla Glue #4', cost: 340, sellPrice: 815, growTime: 135, yield: [1, 2], emoji: '🌱', tier: 'elite', levelReq: 43, xp: 78 },
+            { id: 'gelato', name: 'Gelato', cost: 420, sellPrice: 1010, growTime: 140, yield: [1, 2], emoji: '🌱', tier: 'elite', levelReq: 46, xp: 85 },
+            { id: 'weddingcake', name: 'Wedding Cake', cost: 510, sellPrice: 1225, growTime: 145, yield: [1, 2], emoji: '🌱', tier: 'elite', levelReq: 50, xp: 95 },
+            
+            // LEGENDARY TIER (Lv 55-70) - 110-150 XP - 160% profit margin
+            { id: 'runtz', name: 'Runtz', cost: 620, sellPrice: 1610, growTime: 150, yield: [1, 2], emoji: '🌱', tier: 'legendary', levelReq: 55, xp: 110 },
+            { id: 'zkittlez', name: 'Zkittlez', cost: 750, sellPrice: 1950, growTime: 155, yield: [1, 2], emoji: '🌱', tier: 'legendary', levelReq: 60, xp: 125 },
+            { id: 'dosidos', name: 'Do-Si-Dos', cost: 900, sellPrice: 2340, growTime: 160, yield: [1, 2], emoji: '🌱', tier: 'legendary', levelReq: 65, xp: 140 },
+            { id: 'jetfuel', name: 'Jet Fuel', cost: 1100, sellPrice: 2860, growTime: 165, yield: [1, 2], emoji: '🌱', tier: 'legendary', levelReq: 70, xp: 150 },
+            
+            // EXOTIC TIER (Lv 75-90) - 175-220 XP - 180% profit margin
+            { id: 'whitetruffles', name: 'White Truffles', cost: 1350, sellPrice: 3780, growTime: 170, yield: [1, 2], emoji: '🌱', tier: 'exotic', levelReq: 75, xp: 175 },
+            { id: 'jealousy', name: 'Jealousy', cost: 1650, sellPrice: 4620, growTime: 175, yield: [1, 2], emoji: '🌱', tier: 'exotic', levelReq: 80, xp: 195 },
+            { id: 'cerealmilk', name: 'Cereal Milk', cost: 2000, sellPrice: 5600, growTime: 180, yield: [1, 2], emoji: '🌱', tier: 'exotic', levelReq: 85, xp: 210 },
+            { id: 'gaslato', name: 'Gaslato', cost: 2500, sellPrice: 7000, growTime: 185, yield: [1, 2], emoji: '🌱', tier: 'exotic', levelReq: 90, xp: 220 }
+        ];
+
+        // XP rewards per tier (kept for backwards compatibility)
+        const tierXP = {
+            low: 5,
+            budget: 10,
+            premium: 15,
+            elite: 20,
+            legendary: 25,
+            exotic: 30
+        };
+
+        // ===========================
+        // OBSTACLE DEFINITIONS
+        // ===========================
+        const obstacles = [
+            { type: 'weed', emoji: '🌾', cost: 15 },
+            { type: 'stone', emoji: '🪨', cost: 75 },
+            { type: 'tree', emoji: '🌳', cost: 300 }
+        ];
+
+        // ===========================
+        // SKILL CALCULATIONS
+        // ===========================
+        function calculateXPToNext(level) {
+            // Level 1->2 needs 100 XP, increases by 10% per level
+            return Math.floor(100 * Math.pow(1.1, level - 1));
+        }
+
+        function calculateYieldMultiplier(level) {
+            // Base yields are 1-2g at level 1
+            // Each level adds 2% bonus (level 50 = 2x yields, level 100 = 3x yields)
+            return 1 + ((level - 1) * 0.02);
+        }
+
+        function addHarvestingXP(amount) {
+            const skill = gameState.skills.harvesting;
+            skill.xp += amount;
+
+            // Check for level ups
+            let leveledUp = false;
+            while (skill.xp >= skill.xpToNext && skill.level < 100) {
+                skill.xp -= skill.xpToNext;
+                skill.level++;
+                skill.xpToNext = calculateXPToNext(skill.level);
+                leveledUp = true;
+            }
+
+            // Cap at level 100
+            if (skill.level >= 100) {
+                skill.level = 100;
+                skill.xp = 0;
+                skill.xpToNext = 0;
+            }
+
+            return leveledUp;
+        }
+
+        // ===========================
+        // INITIALIZATION
+        // ===========================
+        function initGame() {
+            // Initialize 9x6 grid (54 tiles)
+            for (let i = 0; i < 54; i++) {
+                const row = Math.floor(i / 9);
+                const col = i % 9;
+                
+                // Top-left 2x2 is unlocked and empty
+                if (row < 2 && col < 2) {
+                    gameState.farmGrid.push({ locked: false, empty: true });
+                } else {
+                    // Assign random obstacle
+                    const obstacle = obstacles[Math.floor(Math.random() * obstacles.length)];
+                    gameState.farmGrid.push({ 
+                        locked: true, 
+                        obstacle: obstacle.type,
+                        emoji: obstacle.emoji,
+                        cost: obstacle.cost
+                    });
+                }
+            }
+
+            // Try to load saved game
+            loadGame();
+
+            // Render initial state
+            renderAll();
+
+            // Start game loop (runs every second)
+            setInterval(gameLoop, 1000);
+
+            // Auto-save every 60 seconds
+            setInterval(saveGame, 60000);
+        }
+
+        // ===========================
+        // GAME LOOP
+        // ===========================
+        function gameLoop() {
+            let needsUpdate = false;
+
+            // Update all planted tiles
+            gameState.farmGrid.forEach(tile => {
+                if (tile.planted && !tile.ready) {
+                    tile.timeRemaining--;
+                    if (tile.timeRemaining <= 0) {
+                        tile.ready = true;
+                        tile.timeRemaining = 0;
+                    }
+                    needsUpdate = true;
+                }
+            });
+
+            if (needsUpdate) {
+                renderFarmGrid();
+            }
+        }
+
+        // ===========================
+        // RENDERING
+        // ===========================
+        function renderAll() {
+            renderMoney();
+            renderFarmGrid();
+            renderShop();
+            renderInventory();
+            renderSkills();
+        }
+
+        function renderMoney() {
+            document.getElementById('money').textContent = gameState.money.toFixed(2);
+        }
+
+        function renderFarmGrid() {
+            const farmView = document.getElementById('farm-view');
+            
+            // Only create tiles if they don't exist
+            if (farmView.children.length === 0) {
+                gameState.farmGrid.forEach((tile, index) => {
+                    const tileDiv = document.createElement('div');
+                    tileDiv.className = 'farm-tile';
+                    tileDiv.dataset.index = index;
+                    tileDiv.onclick = () => handleTileClick(index);
+                    farmView.appendChild(tileDiv);
+                });
+            }
+
+            // Update tile contents
+            gameState.farmGrid.forEach((tile, index) => {
+                const tileDiv = farmView.children[index];
+                tileDiv.className = 'farm-tile';
+                tileDiv.innerHTML = '';
+
+                if (tile.locked) {
+                    tileDiv.classList.add('locked');
+                    const emoji = document.createElement('div');
+                    emoji.className = 'tile-emoji';
+                    emoji.textContent = tile.emoji;
+                    tileDiv.appendChild(emoji);
+                    
+                    const cost = document.createElement('div');
+                    cost.className = 'tile-cost';
+                    cost.textContent = `$${tile.cost}`;
+                    tileDiv.appendChild(cost);
+                } else if (tile.empty) {
+                    tileDiv.classList.add('empty');
+                    const emoji = document.createElement('div');
+                    emoji.className = 'tile-emoji';
+                    emoji.textContent = '⬜';
+                    tileDiv.appendChild(emoji);
+                } else if (tile.planted) {
+                    if (tile.ready) {
+                        tileDiv.classList.add('ready');
+                    } else {
+                        tileDiv.classList.add('planted');
+                    }
+
+                    const emoji = document.createElement('div');
+                    emoji.className = 'tile-emoji';
+                    emoji.textContent = tile.ready ? '🌿' : '🌱';
+                    tileDiv.appendChild(emoji);
+
+                    if (!tile.ready) {
+                        const timer = document.createElement('div');
+                        timer.className = 'tile-timer';
+                        timer.textContent = formatTime(tile.timeRemaining);
+                        tileDiv.appendChild(timer);
+
+                        const progressBar = document.createElement('div');
+                        progressBar.className = 'progress-bar';
+                        const progressFill = document.createElement('div');
+                        progressFill.className = 'progress-fill';
+                        const progress = ((tile.totalTime - tile.timeRemaining) / tile.totalTime) * 100;
+                        progressFill.style.width = progress + '%';
+                        progressBar.appendChild(progressFill);
+                        tileDiv.appendChild(progressBar);
+                    }
+                }
+            });
+        }
+
+        function renderShop() {
+            const seedList = document.getElementById('seed-list');
+            seedList.innerHTML = '';
+
+            seedTypes.forEach(seed => {
+                const seedDiv = document.createElement('div');
+                seedDiv.className = 'seed-item';
+                
+                const inBasket = gameState.basket[seed.id] || 0;
+                
+                seedDiv.innerHTML = `
+                    <div class="seed-info">
+                        <div class="seed-name">${seed.emoji} ${seed.name}${inBasket > 0 ? ` (${inBasket} in basket)` : ''}</div>
+                        <div class="seed-stats">⏱️ ${formatTime(seed.growTime)} | Lv ${seed.levelReq} | ⭐ ${seed.xp} XP</div>
+                    </div>
+                    <div class="seed-price">$${seed.cost}</div>
+                    <div class="seed-controls">
+                        <button class="qty-btn" onclick="addToBasket('${seed.id}', 1)">1x</button>
+                        <button class="qty-btn" onclick="addToBasket('${seed.id}', 10)">10x</button>
+                        <input type="number" class="custom-qty-input" id="custom-${seed.id}" value="20" min="1" max="999">
+                        <button class="add-custom-btn" onclick="addCustomToBasket('${seed.id}')">+</button>
+                    </div>
+                `;
+
+                seedList.appendChild(seedDiv);
+            });
+
+            updateBasketDisplay();
+        }
+
+        function renderInventory() {
+            // Render seed inventory
+            const seedInv = document.getElementById('seed-inventory');
+            seedInv.innerHTML = '';
+            
+            let hasSeedItems = false;
+            for (const [seedId, quantity] of Object.entries(gameState.seedInventory)) {
+                if (quantity > 0) {
+                    hasSeedItems = true;
+                    const seed = seedTypes.find(s => s.id === seedId);
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'inventory-item';
+                    itemDiv.style.cursor = 'pointer';
+                    
+                    if (gameState.selectedSeedForPlanting === seedId) {
+                        itemDiv.style.borderColor = '#ffd700';
+                        itemDiv.style.background = '#4a3520';
+                    }
+                    
+                    itemDiv.onclick = () => selectSeedForPlanting(seedId);
+                    
+                    itemDiv.innerHTML = `
+                        <div class="item-info">
+                            <div class="item-name">${seed.emoji} ${seed.name}</div>
+                        </div>
+                        <div class="item-quantity">×${quantity}</div>
+                    `;
+                    seedInv.appendChild(itemDiv);
+                }
+            }
+
+            if (!hasSeedItems) {
+                seedInv.innerHTML = '<div style="text-align:center; color:#888; padding:20px;">No seeds</div>';
+            }
+
+            // Render product inventory with sell buttons
+            const productInv = document.getElementById('product-inventory');
+            productInv.innerHTML = '';
+            
+            let hasProductItems = false;
+            let totalValue = 0;
+            
+            for (const [strainName, grams] of Object.entries(gameState.productInventory)) {
+                if (grams > 0) {
+                    hasProductItems = true;
+                    const seed = seedTypes.find(s => s.name === strainName);
+                    const value = seed ? (grams * seed.sellPrice) : 0;
+                    totalValue += value;
+                    
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'inventory-item';
+                    itemDiv.innerHTML = `
+                        <div class="item-info">
+                            <div class="item-name">🌿 ${strainName}</div>
+                            <div class="item-value">${grams.toFixed(2)}g × $${seed.sellPrice}/g = $${value.toFixed(2)}</div>
+                        </div>
+                        <button class="sell-btn" onclick="sellProduct('${strainName}')">SELL</button>
+                    `;
+                    productInv.appendChild(itemDiv);
+                }
+            }
+
+            if (hasProductItems) {
+                // Add sell all section at the top
+                const sellAllDiv = document.createElement('div');
+                sellAllDiv.className = 'sell-all-section';
+                sellAllDiv.innerHTML = `
+                    <div class="sell-all-value">Total Value: $${totalValue.toFixed(2)}</div>
+                    <button class="sell-all-btn" onclick="sellAllProducts()">💰 SELL ALL</button>
+                `;
+                productInv.insertBefore(sellAllDiv, productInv.firstChild);
+            } else {
+                productInv.innerHTML = '<div style="text-align:center; color:#888; padding:20px;">No product</div>';
+            }
+        }
+
+        function renderSkills() {
+            const skillsList = document.getElementById('skills-list');
+            const skill = gameState.skills.harvesting;
+            const multiplier = calculateYieldMultiplier(skill.level);
+            const xpPercent = skill.level < 100 ? (skill.xp / skill.xpToNext) * 100 : 100;
+
+            skillsList.innerHTML = `
+                <div class="skill-card">
+                    <div class="skill-header">
+                        <div class="skill-title">🌿 Harvesting</div>
+                        <div class="skill-level">Lv ${skill.level}</div>
+                    </div>
+                    
+                    <div class="skill-xp-bar">
+                        <div class="skill-xp-fill" style="width: ${xpPercent}%"></div>
+                        <div class="skill-xp-text">
+                            ${skill.level < 100 ? `${skill.xp} / ${skill.xpToNext} XP` : 'MAX LEVEL'}
+                        </div>
+                    </div>
+
+                    <div class="skill-info">
+                        Higher harvesting level increases yields from all plants. Every level gives +2% yield bonus.
+                    </div>
+
+                    <div class="skill-bonus">
+                        <span class="bonus-label">Current Bonus:</span> ${((multiplier - 1) * 100).toFixed(0)}% 
+                        (×${multiplier.toFixed(2)} yield multiplier)
+                    </div>
+
+                    <div class="xp-rates">
+                        <div class="xp-rate-title">XP per Harvest (scales with strain level):</div>
+                        <div class="xp-rate-item">Lv 1-10 (Low): 5-15 XP</div>
+                        <div class="xp-rate-item">Lv 12-20 (Budget): 18-28 XP</div>
+                        <div class="xp-rate-item">Lv 23-35 (Premium): 35-55 XP</div>
+                        <div class="xp-rate-item">Lv 40-50 (Elite): 70-95 XP</div>
+                        <div class="xp-rate-item">Lv 55-70 (Legendary): 110-150 XP</div>
+                        <div class="xp-rate-item">Lv 75-90 (Exotic): 175-220 XP</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ===========================
+        // USER ACTIONS
+        // ===========================
+        function handleTileClick(index) {
+            const tile = gameState.farmGrid[index];
+
+            if (gameState.harvestMode) {
+                // Harvest mode: harvest ready plants
+                if (tile.ready) {
+                    harvestPlant(index);
+                }
+            } else if (gameState.plantMode) {
+                // Plant mode: plant selected seed from inventory
+                if (tile.empty && gameState.selectedSeedForPlanting) {
+                    plantSeedFromInventory(index);
+                }
+            } else {
+                // Normal mode: unlock tiles
+                if (tile.locked) {
+                    unlockTile(index);
+                }
+            }
+        }
+
+        function unlockTile(index) {
+            const tile = gameState.farmGrid[index];
+            
+            if (gameState.money >= tile.cost) {
+                gameState.money = Math.round((gameState.money - tile.cost) * 100) / 100;
+                tile.locked = false;
+                tile.empty = true;
+                delete tile.obstacle;
+                delete tile.emoji;
+                delete tile.cost;
+                
+                showNotification(`Cleared obstacle! -$${tile.cost}`);
+                renderMoney();
+                renderFarmGrid();
+                saveGame();
+            } else {
+                showNotification(`Need $${tile.cost}!`);
+            }
+        }
+
+        function addToBasket(seedId, quantity) {
+            if (!gameState.basket[seedId]) {
+                gameState.basket[seedId] = 0;
+            }
+            gameState.basket[seedId] += quantity;
+            
+            const seed = seedTypes.find(s => s.id === seedId);
+            showNotification(`Added ${quantity}x ${seed.name} to basket`);
+            
+            renderShop();
+        }
+
+        function addCustomToBasket(seedId) {
+            const input = document.getElementById(`custom-${seedId}`);
+            const quantity = parseInt(input.value) || 1;
+            
+            // Clamp between 1 and 999
+            const clampedQty = Math.max(1, Math.min(999, quantity));
+            
+            if (!gameState.basket[seedId]) {
+                gameState.basket[seedId] = 0;
+            }
+            gameState.basket[seedId] += clampedQty;
+            
+            const seed = seedTypes.find(s => s.id === seedId);
+            showNotification(`Added ${clampedQty}x ${seed.name} to basket`);
+            
+            renderShop();
+        }
+
+        function calculateBasketTotal() {
+            let total = 0;
+            for (const [seedId, quantity] of Object.entries(gameState.basket)) {
+                const seed = seedTypes.find(s => s.id === seedId);
+                total += seed.cost * quantity;
+            }
+            return total;
+        }
+
+        function updateBasketDisplay() {
+            const total = calculateBasketTotal();
+            document.getElementById('basket-total').textContent = total;
+            
+            const checkoutBtn = document.querySelector('.checkout-btn');
+            if (total > gameState.money) {
+                checkoutBtn.disabled = true;
+            } else {
+                checkoutBtn.disabled = false;
+            }
+        }
+
+        function clearBasket() {
+            gameState.basket = {};
+            showNotification('Basket cleared');
+            renderShop();
+        }
+
+        function checkoutBasket() {
+            const total = calculateBasketTotal();
+            
+            if (total > gameState.money) {
+                showNotification(`Need $${total}! You only have $${gameState.money.toFixed(2)}`);
+                return;
+            }
+
+            if (Object.keys(gameState.basket).length === 0) {
+                showNotification('Basket is empty!');
+                return;
+            }
+
+            // Process purchase
+            gameState.money = Math.round((gameState.money - total) * 100) / 100;
+            
+            let itemCount = 0;
+            for (const [seedId, quantity] of Object.entries(gameState.basket)) {
+                if (!gameState.seedInventory[seedId]) {
+                    gameState.seedInventory[seedId] = 0;
+                }
+                gameState.seedInventory[seedId] += quantity;
+                itemCount += quantity;
+            }
+
+            showNotification(`Purchased ${itemCount} seeds for $${total}!`);
+            
+            // Clear basket
+            gameState.basket = {};
+            
+            renderMoney();
+            renderShop();
+            renderInventory();
+            saveGame();
+        }
+
+        function selectSeedForPlanting(seedId) {
+            if (gameState.selectedSeedForPlanting === seedId) {
+                gameState.selectedSeedForPlanting = null;
+                showNotification('Seed deselected');
+            } else {
+                gameState.selectedSeedForPlanting = seedId;
+                const seed = seedTypes.find(s => s.id === seedId);
+                showNotification(`Selected ${seed.name} for planting`);
+            }
+            renderInventory();
+        }
+
+        function sellProduct(strainName) {
+            const grams = gameState.productInventory[strainName];
+            if (!grams || grams <= 0) return;
+            
+            const seed = seedTypes.find(s => s.name === strainName);
+            const earnings = Math.round((grams * seed.sellPrice) * 100) / 100;
+            
+            gameState.money = Math.round((gameState.money + earnings) * 100) / 100;
+            delete gameState.productInventory[strainName];
+            
+            showNotification(`Sold ${grams.toFixed(2)}g of ${strainName} for $${earnings.toFixed(2)}!`);
+            
+            renderMoney();
+            renderInventory();
+            saveGame();
+        }
+
+        function sellAllProducts() {
+            let totalEarnings = 0;
+            let itemCount = 0;
+            
+            for (const [strainName, grams] of Object.entries(gameState.productInventory)) {
+                if (grams > 0) {
+                    const seed = seedTypes.find(s => s.name === strainName);
+                    totalEarnings += grams * seed.sellPrice;
+                    itemCount++;
+                }
+            }
+            
+            if (totalEarnings > 0) {
+                totalEarnings = Math.round(totalEarnings * 100) / 100;
+                gameState.money = Math.round((gameState.money + totalEarnings) * 100) / 100;
+                gameState.productInventory = {};
+                
+                showNotification(`Sold all products for $${totalEarnings.toFixed(2)}!`);
+                
+                renderMoney();
+                renderInventory();
+                saveGame();
+            }
+        }
+
+        function plantSeedFromInventory(index) {
+            const seedId = gameState.selectedSeedForPlanting;
+            
+            if (!gameState.seedInventory[seedId] || gameState.seedInventory[seedId] <= 0) {
+                showNotification('No seeds left!');
+                return;
+            }
+
+            const seed = seedTypes.find(s => s.id === seedId);
+            const tile = gameState.farmGrid[index];
+
+            // Use one seed from inventory
+            gameState.seedInventory[seedId]--;
+            
+            tile.empty = false;
+            tile.planted = true;
+            tile.seedId = seed.id;
+            tile.strainName = seed.name;
+            tile.totalTime = seed.growTime;
+            tile.timeRemaining = seed.growTime;
+            tile.ready = false;
+            tile.yieldRange = seed.yield;
+
+            showNotification(`Planted ${seed.name}!`);
+            
+            // If out of this seed, deselect it
+            if (gameState.seedInventory[seedId] <= 0) {
+                gameState.selectedSeedForPlanting = null;
+            }
+            
+            renderFarmGrid();
+            renderInventory();
+            saveGame();
+        }
+
+        function harvestPlant(index) {
+            const tile = gameState.farmGrid[index];
+            const seed = seedTypes.find(s => s.id === tile.seedId);
+            
+            // Calculate base yield
+            const min = tile.yieldRange[0];
+            const max = tile.yieldRange[1];
+            const baseYield = Math.random() * (max - min) + min;
+            
+            // Apply harvesting level multiplier
+            const multiplier = calculateYieldMultiplier(gameState.skills.harvesting.level);
+            const finalYield = baseYield * multiplier;
+
+            // Add to product inventory
+            if (!gameState.productInventory[tile.strainName]) {
+                gameState.productInventory[tile.strainName] = 0;
+            }
+            gameState.productInventory[tile.strainName] += finalYield;
+
+            // Add XP based on seed's individual XP value
+            const xpGained = seed.xp;
+            const leveledUp = addHarvestingXP(xpGained);
+
+            // Show notification
+            let message = `Harvested ${finalYield.toFixed(2)}g of ${tile.strainName}! +${xpGained} XP`;
+            if (leveledUp) {
+                message = `🎉 LEVEL UP! Harvesting Lv ${gameState.skills.harvesting.level}! (+${finalYield.toFixed(2)}g ${tile.strainName})`;
+            }
+            showNotification(message);
+
+            // Reset tile to empty
+            tile.planted = false;
+            tile.ready = false;
+            tile.empty = true;
+            delete tile.seedId;
+            delete tile.strainName;
+            delete tile.totalTime;
+            delete tile.timeRemaining;
+            delete tile.yieldRange;
+
+            renderFarmGrid();
+            renderInventory();
+            renderSkills();
+            saveGame();
+        }
+
+        function togglePlantMode() {
+            gameState.plantMode = !gameState.plantMode;
+            const btn = document.getElementById('plant-mode-btn');
+            
+            if (gameState.plantMode) {
+                btn.classList.add('active');
+                btn.textContent = '✅ PLANTING';
+                showNotification('Plant mode ON - Select seed from inventory');
+                
+                // Turn off harvest mode
+                if (gameState.harvestMode) {
+                    gameState.harvestMode = false;
+                    document.getElementById('harvest-mode-btn').classList.remove('active');
+                    document.getElementById('harvest-mode-btn').textContent = '🔪 HARVEST';
+                }
+            } else {
+                btn.classList.remove('active');
+                btn.textContent = '🌱 PLANT';
+                showNotification('Plant mode OFF');
+            }
+        }
+
+        function toggleHarvestMode() {
+            gameState.harvestMode = !gameState.harvestMode;
+            const btn = document.getElementById('harvest-mode-btn');
+            
+            if (gameState.harvestMode) {
+                btn.classList.add('active');
+                btn.textContent = '✅ HARVESTING';
+                showNotification('Harvest mode ON');
+                
+                // Turn off plant mode
+                if (gameState.plantMode) {
+                    gameState.plantMode = false;
+                    document.getElementById('plant-mode-btn').classList.remove('active');
+                    document.getElementById('plant-mode-btn').textContent = '🌱 PLANT';
+                }
+            } else {
+                btn.classList.remove('active');
+                btn.textContent = '🔪 HARVEST';
+                showNotification('Harvest mode OFF');
+            }
+        }
+
+        // ===========================
+        // VIEW SWITCHING
+        // ===========================
+        function switchView(view) {
+            gameState.currentView = view;
+
+            // Hide all views
+            document.getElementById('farm-view').classList.add('hidden');
+            document.getElementById('shop-view').classList.add('hidden');
+            document.getElementById('inventory-view').classList.add('hidden');
+            document.getElementById('skills-view').classList.add('hidden');
+
+            // Show selected view
+            document.getElementById(`${view}-view`).classList.remove('hidden');
+
+            // Update nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Show/hide mode buttons
+            const harvestBtn = document.getElementById('harvest-mode-btn');
+            const plantBtn = document.getElementById('plant-mode-btn');
+            const basketPanel = document.getElementById('basket-panel');
+            
+            if (view === 'farm') {
+                harvestBtn.style.display = 'block';
+                plantBtn.style.display = 'block';
+                basketPanel.classList.add('hidden');
+            } else if (view === 'shop') {
+                harvestBtn.style.display = 'none';
+                plantBtn.style.display = 'none';
+                basketPanel.classList.remove('hidden');
+            } else {
+                harvestBtn.style.display = 'none';
+                plantBtn.style.display = 'none';
+                basketPanel.classList.add('hidden');
+            }
+        }
+
+        // ===========================
+        // UTILITIES
+        // ===========================
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function showNotification(message) {
+            const notif = document.getElementById('notification');
+            notif.textContent = message;
+            notif.classList.add('show');
+            setTimeout(() => {
+                notif.classList.remove('show');
+            }, 2000);
+        }
+
+        // ===========================
+        // SAVE/LOAD
+        // ===========================
+        function saveGame() {
+            const saveData = {
+                money: gameState.money,
+                farmGrid: gameState.farmGrid,
+                seedInventory: gameState.seedInventory,
+                productInventory: gameState.productInventory,
+                skills: gameState.skills
+            };
+            localStorage.setItem('cannabisFarmSave', JSON.stringify(saveData));
+            console.log('Game saved!');
+        }
+
+        function loadGame() {
+            const saveData = localStorage.getItem('cannabisFarmSave');
+            if (saveData) {
+                try {
+                    const data = JSON.parse(saveData);
+                    gameState.money = data.money;
+                    gameState.farmGrid = data.farmGrid;
+                    gameState.seedInventory = data.seedInventory || {};
+                    gameState.productInventory = data.productInventory || {};
+                    
+                    // Load skills with defaults
+                    if (data.skills) {
+                        gameState.skills = data.skills;
+                        // Recalculate xpToNext in case formula changed
+                        gameState.skills.harvesting.xpToNext = calculateXPToNext(gameState.skills.harvesting.level);
+                    }
+                    
+                    console.log('Game loaded!');
+                    showNotification('Game loaded!');
+                } catch (e) {
+                    console.error('Failed to load save:', e);
+                }
+            }
+        }
+
+        // ===========================
+        // EVENT LISTENERS
+        // ===========================
+        document.getElementById('harvest-mode-btn').onclick = toggleHarvestMode;
+        document.getElementById('plant-mode-btn').onclick = togglePlantMode;
+
+        // ===========================
+        // START GAME
+        // ===========================
+        initGame();
+    </script>
+</body>
+</html>
